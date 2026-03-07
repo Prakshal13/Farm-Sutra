@@ -3,9 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, 
   KeyboardAvoidingView, Platform, StatusBar, Image 
 } from 'react-native';
-// AsyncStorage data clear karne ke liye zaroori hai
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Context import kiya bhasha ke liye
 import { LanguageContext } from '../LanguageContext'; 
 
 const textDict: any = {
@@ -25,7 +23,6 @@ export default function Welcome({ navigation }: any) {
     setStep('LOGIN'); 
   };
 
-  // 🔥 GUEST LOGIN — FULL FRESH START 🔥
   const handleGuestLogin = async () => {
     try {
       const allKeys = await AsyncStorage.getAllKeys();
@@ -35,7 +32,6 @@ export default function Welcome({ navigation }: any) {
       await AsyncStorage.multiRemove(keysToDelete);
       navigation.replace('MainTabs');
     } catch (e) {
-      console.log("Error clearing data:", e);
       navigation.replace('MainTabs'); 
     }
   };
@@ -45,18 +41,18 @@ export default function Welcome({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#122614" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
-        {/* 🌟 LOGO & BRAND SECTION 🌟 */}
+        {/* 🌟 PERFECT CIRCULAR LOGO SECTION 🌟 */}
         <View style={styles.logoContainer}>
-          {/* Circular Frame for Logo Graphic */}
+          {/* Is wrapper se humne perfect circle banaya hai */}
           <View style={styles.imageWrapper}>
              <Image 
-               source={require('../assets/logo.jpg')} 
+               source={require('../assets/logo.jpg')} //
                style={styles.logoImage} 
              />
           </View>
           
           <View style={styles.brandRow}>
-            {/* Brand Name pehle aur Emoji baad mein */}
+            {/* Text pehle, Emoji baad mein: Farm Sutra 🌾 */}
             <Text style={styles.brandName}>Farm Sutra</Text>
             <Text style={styles.logoText}>🌾</Text> 
           </View>
@@ -104,29 +100,31 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#122614', paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0 }, 
   container: { flex: 1, justifyContent: 'space-between', padding: 20 },
   
-  // 🎨 LOGO & BRAND STYLES (Balanced Zoom & Spacing)
   logoContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
+  
+  // 🖼️ Boundary-to-Boundary Fit Logic
   imageWrapper: {
-    width: 140,            
-    height: 140, 
-    borderRadius: 70, 
+    width: 160, 
+    height: 160, 
+    borderRadius: 80, 
     overflow: 'hidden', 
     borderWidth: 2, 
     borderColor: '#4CAF50',
     marginBottom: 15,
-    backgroundColor: '#FFF', 
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center'
   },
   logoImage: { 
-    width: '85%',          // Balanced zoom (not too close to edges)
-    height: '85%', 
-    resizeMode: 'contain'  // Ensures whole logo is visible
+    width: '100%', 
+    height: '100%', 
+    // 'cover' ensure karega ki emblem boundary tak stretch ho jaye
+    resizeMode: 'cover' 
   },
 
   brandRow: { flexDirection: 'row', alignItems: 'center' },
-  brandName: { fontSize: 34, fontWeight: 'bold', color: '#FFF', letterSpacing: 1 },
-  logoText: { fontSize: 34, marginLeft: 8 }, // Space between text and 🌾
+  brandName: { fontSize: 36, fontWeight: 'bold', color: '#FFF', letterSpacing: 1 },
+  logoText: { fontSize: 38, marginLeft: 10 }, 
 
   bottomSection: { paddingBottom: 40, alignItems: 'center' },
   iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1E3F20', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
