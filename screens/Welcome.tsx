@@ -23,22 +23,37 @@ export default function Welcome({ navigation }: any) {
   const { lang, setLang } = useContext(LanguageContext); 
 
   const selectLanguage = (selectedLang: string) => {
-    setLang(selectedLang); 
+    setLang(selectedLang); // Global memory me bhasha save ho gayi
     setStep('LOGIN'); 
   };
 
   // 🔥 GUEST LOGIN — FULL FRESH START 🔥
   const handleGuestLogin = async () => {
     try {
+      // 1. Get ALL keys currently in AsyncStorage
       const allKeys = await AsyncStorage.getAllKeys();
-      const fixedKeys = ['chat_history', 'farm_activity_log', 'mandi_sell_orders'];
+
+      // 2. Fixed keys to always delete
+      const fixedKeys = [
+        'chat_history',        // ChatBot conversation history
+        'farm_activity_log',   // Credit score activity log
+        'mandi_sell_orders',   // Mandi listings (expiry, sold status etc.)
+      ];
+
+      // 3. Dynamic keys — daily crop listing cap (last_listing_{cropName})
       const cropCapKeys = allKeys.filter(k => k.startsWith('last_listing_'));
+
+      // 4. Delete everything in one shot
       const keysToDelete = [...fixedKeys, ...cropCapKeys];
       await AsyncStorage.multiRemove(keysToDelete);
+
+      console.log(`Guest Login: Cleared ${keysToDelete.length} keys →`, keysToDelete);
+
+      // 5. Navigate fresh
       navigation.replace('MainTabs');
     } catch (e) {
       console.log("Error clearing data:", e);
-      navigation.replace('MainTabs'); 
+      navigation.replace('MainTabs'); // App should never get stuck
     }
   };
 
@@ -47,12 +62,17 @@ export default function Welcome({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#122614" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
-        {/* 🌟 INTEGRATED LOGO SECTION (Option 2 + Original Style) 🌟 */}
+        {/* 🌟 LOGO & BRAND SECTION 🌟 */}
         <View style={styles.logoContainer}>
-          <Image 
-            source={require('../assets/logo.jpg')} 
-            style={styles.logoImage} 
-          />
+          {/* Wrapper creates the perfect circular frame */}
+          <View style={styles.imageWrapper}>
+             <Image 
+               source={require('../assets/logo.jpg')} // Assumes image_7.png is saved here
+               style={styles.logoImage} 
+             />
+          </View>
+          
+          {/* React Native Brand Text remains below */}
           <View style={styles.brandRow}>
             <Text style={styles.logoText}>🌾</Text>
             <Text style={styles.brandName}>Farm Sutra</Text>
@@ -108,16 +128,29 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#122614', paddingTop: paddingTopOS }, 
   container: { flex: 1, justifyContent: 'space-between', padding: 20 },
   
-  // 🎨 LOGO STYLES
+  // 🎨 LOGO & BRAND STYLES UPDATED FOR PERFECT FIT 🎨
   logoContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
-  logoImage: { 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
-    borderWidth: 2, 
-    borderColor: '#4CAF50', 
-    marginBottom: 15 
+  
+  // Is wrapper se humne perfect circle banaya hai jiske andar photo rahegi
+  imageWrapper: {
+    width: 150, 
+    height: 150, 
+    borderRadius: 75, // perfect circle (width/2)
+    overflow: 'hidden', // photo ka jo hissa bahar niklega use chhupa dega
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    justifyContent: 'center', // Photo center me rahe
+    alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: '#FFF' // photo ka background white hai toh hum container bhi white de rahe hain
   },
+  
+  logoImage: { 
+    width: '100%', // pure container me fail jayegi photo
+    height: '100%', 
+    resizeMode: 'contain', // Photo bina kate, makkhan fit hogi
+  },
+
   brandRow: { flexDirection: 'row', alignItems: 'center' },
   logoText: { fontSize: 38, marginRight: 10 }, // Emoji size
   brandName: { fontSize: 36, fontWeight: 'bold', color: '#FFF', letterSpacing: 1 },
