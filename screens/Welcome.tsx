@@ -1,5 +1,8 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import { 
+  View, Text, StyleSheet, TouchableOpacity, TextInput, 
+  KeyboardAvoidingView, Platform, StatusBar, Image 
+} from 'react-native';
 // AsyncStorage import karna zaroori hai data clear karne ke liye
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Context import kiya
@@ -16,41 +19,35 @@ const textDict: any = {
 export default function Welcome({ navigation }: any) {
   const [step, setStep] = useState('LANGUAGE'); 
   
-  // Ab bhasha Global Memory (Context) se aa rahi hai!
+  // Global Language Context
   const { lang, setLang } = useContext(LanguageContext); 
 
   const selectLanguage = (selectedLang: string) => {
-    setLang(selectedLang); // Global memory me bhasha save ho gayi
+    setLang(selectedLang); 
     setStep('LOGIN'); 
   };
 
   // 🔥 GUEST LOGIN — FULL FRESH START 🔥
   const handleGuestLogin = async () => {
     try {
-      // 1. Get ALL keys currently in AsyncStorage
       const allKeys = await AsyncStorage.getAllKeys();
 
-      // 2. Fixed keys to always delete
       const fixedKeys = [
-        'chat_history',        // ChatBot conversation history
-        'farm_activity_log',   // Credit score activity log
-        'mandi_sell_orders',   // Mandi listings (expiry, sold status etc.)
+        'chat_history',        
+        'farm_activity_log',   
+        'mandi_sell_orders',   
       ];
 
-      // 3. Dynamic keys — daily crop listing cap (last_listing_{cropName})
       const cropCapKeys = allKeys.filter(k => k.startsWith('last_listing_'));
-
-      // 4. Delete everything in one shot
       const keysToDelete = [...fixedKeys, ...cropCapKeys];
+      
       await AsyncStorage.multiRemove(keysToDelete);
+      console.log(`Guest Login: Cleared ${keysToDelete.length} keys`);
 
-      console.log(`Guest Login: Cleared ${keysToDelete.length} keys →`, keysToDelete);
-
-      // 5. Navigate fresh
       navigation.replace('MainTabs');
     } catch (e) {
       console.log("Error clearing data:", e);
-      navigation.replace('MainTabs'); // App should never get stuck
+      navigation.replace('MainTabs'); 
     }
   };
 
@@ -59,8 +56,12 @@ export default function Welcome({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#122614" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
+        {/* 🌟 LOGO SECTION 🌟 */}
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>🌾</Text>
+          <Image 
+            source={require('../assets/logo.jpg')} 
+            style={styles.logoImage} 
+          />
           <Text style={styles.brandName}>Farm Sutra</Text>
         </View>
 
@@ -113,8 +114,15 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#122614', paddingTop: paddingTopOS }, 
   container: { flex: 1, justifyContent: 'space-between', padding: 20 },
   logoContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoText: { fontSize: 80 },
-  brandName: { fontSize: 36, fontWeight: 'bold', color: '#FFF', marginTop: 10, letterSpacing: 1 },
+  logoImage: { 
+    width: 160, 
+    height: 160, 
+    borderRadius: 80, // Perfect circle
+    borderWidth: 3,
+    borderColor: '#4CAF50',
+    marginBottom: 15
+  },
+  brandName: { fontSize: 38, fontWeight: 'bold', color: '#FFF', letterSpacing: 1.5 },
   bottomSection: { paddingBottom: 40, alignItems: 'center' },
   iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1E3F20', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   iconText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
