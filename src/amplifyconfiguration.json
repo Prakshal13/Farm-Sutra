@@ -1,0 +1,33 @@
+{
+  "aws_project_region": "us-east-1",
+  "aws_cognito_identity_pool_id": "us-east-1:c2dad5d5-354e-4cb7-9093-44cbbfb26839",
+  "aws_cognito_region": "us-east-1",
+  "aws_user_pools_id": "us-east-1_JGkVKnpq7",
+  "aws_user_pools_web_client_id": "3hoerh4ao4s2pulf7aodp0qcac",
+  "oauth": {},
+  "aws_cognito_username_attributes": [],
+  "aws_cognito_social_providers": [],
+  "aws_cognito_signup_attributes": [
+    "EMAIL"
+  ],
+  "aws_cognito_mfa_configuration": "OFF",
+  "aws_cognito_mfa_types": [
+    "SMS"
+  ],
+  "aws_cognito_password_protection_settings": {
+    "passwordPolicyMinLength": 8,
+    "passwordPolicyCharacters": []
+  },
+  "aws_cognito_verification_mechanisms": [
+    "EMAIL"
+  ],
+  "aws_user_files_s3_bucket": "farmsutrada6c4dd6f45a46328e6c9ae31bbb6fc2a0777-dev",
+  "aws_user_files_s3_bucket_region": "us-east-1",
+  "aws_cloud_logic_custom": [
+    {
+      "name": "farmsutraApi",
+      "endpoint": "https://gr6e7oec49.execute-api.us-east-1.amazonaws.com/dev",
+      "region": "us-east-1"
+    }
+  ]
+}
