@@ -3,7 +3,9 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, 
   KeyboardAvoidingView, Platform, StatusBar, Image 
 } from 'react-native';
+// AsyncStorage import kiya data clear karne ke liye
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// Context import kiya bhasha ke liye
 import { LanguageContext } from '../LanguageContext'; 
 
 const textDict: any = {
@@ -41,9 +43,8 @@ export default function Welcome({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#122614" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
-        {/* 🌟 PERFECT CIRCULAR LOGO SECTION 🌟 */}
+        {/* 🌟 PIXEL PERFECT LOGO SECTION 🌟 */}
         <View style={styles.logoContainer}>
-          {/* Is wrapper se humne perfect circle banaya hai */}
           <View style={styles.imageWrapper}>
              <Image 
                source={require('../assets/logo.jpg')} //
@@ -116,10 +117,10 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   logoImage: { 
-    width: '100%', 
-    height: '100%', 
-    // 'cover' ensure karega ki emblem boundary tak stretch ho jaye
-    resizeMode: 'cover' 
+    width: '115%', // Thoda zoom taaki edges touch karein
+    height: '115%', 
+    resizeMode: 'cover', // Boundary-to-boundary fit ke liye
+    marginTop: -8 // Niche ka text "FARM SUTRA" kaatne ke liye
   },
 
   brandRow: { flexDirection: 'row', alignItems: 'center' },
