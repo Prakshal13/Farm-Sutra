@@ -19,7 +19,7 @@ const textDict: any = {
 export default function Welcome({ navigation }: any) {
   const [step, setStep] = useState('LANGUAGE'); 
   
-  // Global Language Context
+  // Ab bhasha Global Memory (Context) se aa rahi hai!
   const { lang, setLang } = useContext(LanguageContext); 
 
   const selectLanguage = (selectedLang: string) => {
@@ -31,19 +31,10 @@ export default function Welcome({ navigation }: any) {
   const handleGuestLogin = async () => {
     try {
       const allKeys = await AsyncStorage.getAllKeys();
-
-      const fixedKeys = [
-        'chat_history',        
-        'farm_activity_log',   
-        'mandi_sell_orders',   
-      ];
-
+      const fixedKeys = ['chat_history', 'farm_activity_log', 'mandi_sell_orders'];
       const cropCapKeys = allKeys.filter(k => k.startsWith('last_listing_'));
       const keysToDelete = [...fixedKeys, ...cropCapKeys];
-      
       await AsyncStorage.multiRemove(keysToDelete);
-      console.log(`Guest Login: Cleared ${keysToDelete.length} keys`);
-
       navigation.replace('MainTabs');
     } catch (e) {
       console.log("Error clearing data:", e);
@@ -56,13 +47,16 @@ export default function Welcome({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#122614" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
-        {/* 🌟 LOGO SECTION 🌟 */}
+        {/* 🌟 INTEGRATED LOGO SECTION (Option 2 + Original Style) 🌟 */}
         <View style={styles.logoContainer}>
           <Image 
             source={require('../assets/logo.jpg')} 
             style={styles.logoImage} 
           />
-          <Text style={styles.brandName}>Farm Sutra</Text>
+          <View style={styles.brandRow}>
+            <Text style={styles.logoText}>🌾</Text>
+            <Text style={styles.brandName}>Farm Sutra</Text>
+          </View>
         </View>
 
         {step === 'LANGUAGE' && (
@@ -113,16 +107,21 @@ const paddingTopOS = Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0;
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#122614', paddingTop: paddingTopOS }, 
   container: { flex: 1, justifyContent: 'space-between', padding: 20 },
-  logoContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  
+  // 🎨 LOGO STYLES
+  logoContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
   logoImage: { 
-    width: 160, 
-    height: 160, 
-    borderRadius: 80, // Perfect circle
-    borderWidth: 3,
-    borderColor: '#4CAF50',
-    marginBottom: 15
+    width: 140, 
+    height: 140, 
+    borderRadius: 70, 
+    borderWidth: 2, 
+    borderColor: '#4CAF50', 
+    marginBottom: 15 
   },
-  brandName: { fontSize: 38, fontWeight: 'bold', color: '#FFF', letterSpacing: 1.5 },
+  brandRow: { flexDirection: 'row', alignItems: 'center' },
+  logoText: { fontSize: 38, marginRight: 10 }, // Emoji size
+  brandName: { fontSize: 36, fontWeight: 'bold', color: '#FFF', letterSpacing: 1 },
+
   bottomSection: { paddingBottom: 40, alignItems: 'center' },
   iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1E3F20', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   iconText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
