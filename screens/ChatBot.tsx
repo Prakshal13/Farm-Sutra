@@ -135,7 +135,7 @@ export default function ChatBot() {
       setMessages(prev => [...prev, { id: Date.now(), text: res.reply, sender: 'bot' }]);
       
       // 🔥 SCORE UPDATE + POPUP 🔥
-      await addActivityPoints(ACTIVITIES.CROP_SCAN);
+      await addActivityPoints(ACTIVITIES.CROP_SCAN, lang);
 
     } catch (e) { console.log(e); } finally { setIsLoading(false); }
   };
@@ -161,7 +161,7 @@ export default function ChatBot() {
       setMessages(prev => [...prev, { id: Date.now() + 1, text: res.reply, sender: 'bot' }]);
       
       // 🔥 SCORE UPDATE + POPUP 🔥
-      await addActivityPoints(ACTIVITIES.CHATBOT_QUERY);
+      await addActivityPoints(ACTIVITIES.CHATBOT_QUERY, lang);
 
     } catch (e) { console.log(e); } finally { setIsLoading(false); }
   };

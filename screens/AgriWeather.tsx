@@ -111,7 +111,7 @@ export default function AgriWeather() {
         }
 
         // 🔥 SCORE UPDATE + POPUP 🔥
-        await addActivityPoints(ACTIVITIES.WEATHER_DATA);
+        await addActivityPoints(ACTIVITIES.WEATHER_DATA, lang);
       }
     } catch (error) {
       console.log("Weather API Error:", error);

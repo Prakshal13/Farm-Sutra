@@ -192,12 +192,48 @@ export default function CreditScore() {
         <p style="margin-top:30px;font-size:10px;color:#888;text-align:center">Digitally Verified by AWS Bedrock & Sentinel-2</p>
       </body></html>`;
 
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
-      
-      if (Platform.OS === 'web') {
-        Alert.alert("Web Mode", "PDF Sharing works natively on Android/iOS.");
-      } else {
+      if (Platform.OS !== 'web') {
+        // ✅ Native iOS/Android app: expo-print works perfectly
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Download Farm Sutra Report' });
+      } else {
+        // Web / PWA — must handle 3 sub-cases:
+        // 1. Desktop browser     → open new tab + browser print dialog (Save as PDF)
+        // 2. Android Chrome PWA  → anchor download works
+        // 3. iOS Safari (browser OR home screen PWA) → window.open blocked, print() not supported
+        //    Best option: navigate to blob URL — opens the report in Safari where
+        //    the user can tap Share → Save to Files / Print
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const isIOS = /iPad|iPhone|iPod/.test((navigator as any).userAgent);
+
+        if (isIOS) {
+          // iOS Safari (both browser and PWA home screen):
+          // Navigate current window to blob URL — renders report in Safari.
+          // User can then tap the Share button → Save to Files, Print, AirDrop etc.
+          window.location.href = blobUrl;
+        } else {
+          // Desktop / Android: try opening new tab with print dialog
+          const win = (window as any).open(blobUrl, '_blank');
+          if (win) {
+            win.addEventListener('load', () => {
+              setTimeout(() => win.print(), 400);
+            });
+          } else {
+            // Popup blocked fallback: force download as .html file
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `FarmSutra_CreditReport_${farmId}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+        }
+
+        // Cleanup blob URL after a delay
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
       }
     } catch (e: any) {
       console.log('PDF Error:', e);
@@ -279,8 +315,13 @@ export default function CreditScore() {
               <Text style={S.noLoanSub}>{t.noLoanSub}</Text>
               <View style={S.hints}>
                 <Text style={S.hintsTitle}>{t.unlockTitle}</Text>
-                <Text style={S.hint}>🛒 Mandi Listing = +40 {t.ptsText}</Text>
-                <Text style={S.hint}>🌿 Crop Scan = +25 {t.ptsText}</Text>
+                <Text style={S.hint}>🛒 {ACTIVITIES.MANDI_LISTING.label[lang as 'en'] || ACTIVITIES.MANDI_LISTING.label['en']} = +{ACTIVITIES.MANDI_LISTING.points} {t.ptsText}</Text>
+                <Text style={S.hint}>✅ {ACTIVITIES.MANDI_SOLD.label[lang as 'en'] || ACTIVITIES.MANDI_SOLD.label['en']} = +{ACTIVITIES.MANDI_SOLD.points} {t.ptsText}</Text>
+                <Text style={S.hint}>💬 {ACTIVITIES.MANDI_CONTACT.label[lang as 'en'] || ACTIVITIES.MANDI_CONTACT.label['en']} = +{ACTIVITIES.MANDI_CONTACT.points} {t.ptsText}</Text>
+                <Text style={S.hint}>🌿 {ACTIVITIES.CROP_SCAN.label[lang as 'en'] || ACTIVITIES.CROP_SCAN.label['en']} = +{ACTIVITIES.CROP_SCAN.points} {t.ptsText}</Text>
+                <Text style={S.hint}>🌦️ {ACTIVITIES.WEATHER_DATA.label[lang as 'en'] || ACTIVITIES.WEATHER_DATA.label['en']} = +{ACTIVITIES.WEATHER_DATA.points} {t.ptsText}</Text>
+                <Text style={S.hint}>☁️ {ACTIVITIES.WEATHER_CHECK.label[lang as 'en'] || ACTIVITIES.WEATHER_CHECK.label['en']} = +{ACTIVITIES.WEATHER_CHECK.points} {t.ptsText}</Text>
+                <Text style={S.hint}>🤖 {ACTIVITIES.CHATBOT_QUERY.label[lang as 'en'] || ACTIVITIES.CHATBOT_QUERY.label['en']} = +{ACTIVITIES.CHATBOT_QUERY.points} {t.ptsText}</Text>
               </View>
             </View>
           )}
