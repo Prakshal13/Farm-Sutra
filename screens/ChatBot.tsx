@@ -29,6 +29,12 @@ const chatDict: any = {
     header: "🤖 Farm Sutra AI", placeholder: "Ask Farm Sutra...", 
     offline: "Offline. Data saving to device.", thinking: "Farm Sutra is thinking...", 
     welcome: "Ram Ram! I am Farm Sutra AI.", listening: "Listening...",
+    queueFull: "⚠️ Offline queue full (5 items max). Please send when you have network.",
+    syncingMsg: "🔄 Network restored! Processing your saved requests...",
+    syncDone: "✅ All saved requests processed!",
+    syncItem: "📤 Processing saved item",
+    offlineTextSaved: "⚠️ Question saved offline. Will be sent automatically when network returns.",
+    offlineImageSaved: "⚠️ Photo saved offline (queue: {n}/5). Will be analysed automatically when network returns.",
     scanTipTitle: "📸 Photo Tips for Best Diagnosis",
     scanTip1: "• Get close to the affected leaf or area",
     scanTip2: "• Make sure there is good lighting",
@@ -45,6 +51,12 @@ const chatDict: any = {
     header: "🤖 फार्म सूत्र AI", placeholder: "फार्म सूत्र से पूछें...", 
     offline: "ऑफ़लाइन। डेटा डिवाइस में सेव हो रहा है।", thinking: "फार्म सूत्र सोच रहा है...", 
     welcome: "राम राम! मैं फार्म सूत्र AI हूँ।", listening: "सुन रहा हूँ...",
+    queueFull: "⚠️ ऑफलाइन कतार भर गई (अधिकतम 5)। नेटवर्क आने पर भेजें।",
+    syncingMsg: "🔄 नेटवर्क वापस आ गया! सेव किए गए सवाल भेजे जा रहे हैं...",
+    syncDone: "✅ सभी सेव किए गए सवाल भेज दिए गए!",
+    syncItem: "📤 सेव किया गया आइटम भेजा जा रहा है",
+    offlineTextSaved: "⚠️ सवाल ऑफलाइन सेव हो गया। नेटवर्क आने पर अपने आप भेजा जाएगा।",
+    offlineImageSaved: "⚠️ फोटो ऑफलाइन सेव हो गई ({n}/5)। नेटवर्क आने पर अपने आप जाँच होगी।",
     scanTipTitle: "📸 बेहतर निदान के लिए फोटो टिप्स",
     scanTip1: "• प्रभावित पत्ती या हिस्से के पास जाएं",
     scanTip2: "• अच्छी रोशनी में फोटो लें",
@@ -61,6 +73,12 @@ const chatDict: any = {
     header: "🤖 பார்ம் சூத்திரா AI", placeholder: "கேள்வி கேட்க...", 
     offline: "ஆஃப்லைன். தரவு சேமிக்கப்படுகிறது.", thinking: "பார்ம் சூத்திரா யோசிக்கிறது...", 
     welcome: "வணக்கம்! நான் பார்ம் சூத்திரா AI.", listening: "கேட்கிறேன்...",
+    queueFull: "⚠️ ஆஃப்லைன் வரிசை நிரம்பியது (அதிகபட்சம் 5). நெட்வொர்க் வந்தவுடன் அனுப்புங்கள்.",
+    syncingMsg: "🔄 நெட்வொர்க் திரும்பியது! சேமித்த கோரிக்கைகள் செயலாக்கப்படுகின்றன...",
+    syncDone: "✅ அனைத்து சேமித்த கோரிக்கைகளும் செயலாக்கப்பட்டன!",
+    syncItem: "📤 சேமித்த உருப்படி செயலாக்கப்படுகிறது",
+    offlineTextSaved: "⚠️ கேள்வி ஆஃப்லைனில் சேமிக்கப்பட்டது. நெட்வொர்க் வந்தவுடன் தானாக அனுப்பப்படும்.",
+    offlineImageSaved: "⚠️ புகைப்படம் ஆஃப்லைனில் சேமிக்கப்பட்டது ({n}/5). நெட்வொர்க் வந்தவுடன் தானாக பகுப்பாய்வு செய்யப்படும்.",
     scanTipTitle: "📸 சிறந்த நோய் கண்டறிதலுக்கான டிப்ஸ்",
     scanTip1: "• பாதிக்கப்பட்ட இலைக்கு அருகில் செல்லுங்கள்",
     scanTip2: "• நல்ல வெளிச்சத்தில் எடுக்கவும்",
@@ -77,6 +95,12 @@ const chatDict: any = {
     header: "🤖 ਫਾਰਮ ਸੂਤਰ AI", placeholder: "ਫਾਰਮ ਸੂਤਰ ਤੋਂ ਪੁੱਛੋ...", 
     offline: "ਔਫਲਾਈਨ। ਡਾਟਾ ਸੇਵ ਹੋ ਰਿਹਾ ਹੈ।", thinking: "ਫਾਰਮ ਸੂਤਰ ਸੋਚ ਰਿਹਾ ਹੈ...", 
     welcome: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਫਾਰਮ ਸੂਤਰ AI ਹਾਂ।", listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ...",
+    queueFull: "⚠️ ਔਫਲਾਈਨ ਕਤਾਰ ਭਰ ਗਈ (ਵੱਧ ਤੋਂ ਵੱਧ 5)। ਨੈੱਟਵਰਕ ਆਉਣ 'ਤੇ ਭੇਜੋ।",
+    syncingMsg: "🔄 ਨੈੱਟਵਰਕ ਵਾਪਸ ਆ ਗਿਆ! ਸੇਵ ਕੀਤੀਆਂ ਬੇਨਤੀਆਂ ਭੇਜੀਆਂ ਜਾ ਰਹੀਆਂ ਹਨ...",
+    syncDone: "✅ ਸਾਰੀਆਂ ਸੇਵ ਕੀਤੀਆਂ ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ!",
+    syncItem: "📤 ਸੇਵ ਕੀਤਾ ਆਈਟਮ ਭੇਜਿਆ ਜਾ ਰਿਹਾ ਹੈ",
+    offlineTextSaved: "⚠️ ਸਵਾਲ ਔਫਲਾਈਨ ਸੇਵ ਹੋ ਗਿਆ। ਨੈੱਟਵਰਕ ਆਉਣ 'ਤੇ ਆਪਣੇ ਆਪ ਭੇਜਿਆ ਜਾਵੇਗਾ।",
+    offlineImageSaved: "⚠️ ਫੋਟੋ ਔਫਲਾਈਨ ਸੇਵ ਹੋ ਗਈ ({n}/5)। ਨੈੱਟਵਰਕ ਆਉਣ 'ਤੇ ਆਪਣੇ ਆਪ ਜਾਂਚ ਹੋਵੇਗੀ।",
     scanTipTitle: "📸 ਵਧੀਆ ਤਸਵੀਰ ਲਈ ਸੁਝਾਅ",
     scanTip1: "• ਪ੍ਰਭਾਵਿਤ ਪੱਤੇ ਦੇ ਨੇੜੇ ਜਾਓ",
     scanTip2: "• ਚੰਗੀ ਰੋਸ਼ਨੀ ਵਿੱਚ ਫੋਟੋ ਲਓ",
@@ -93,6 +117,12 @@ const chatDict: any = {
     header: "🤖 फार्म सूत्र AI", placeholder: "फार्म सूत्र तै पूछो...", 
     offline: "ऑफलाइन। डेटा डिवाइस में सेव हो रह्या सै।", thinking: "फार्म सूत्र सोच रहा सै...", 
     welcome: "राम राम! मैं फार्म सूत्र AI सूँ।", listening: "सुणु सूँ...",
+    queueFull: "⚠️ ऑफलाइन कतार भर गी (ज्यादा तै ज्यादा 5)। नेटवर्क आवै तो भेजो।",
+    syncingMsg: "🔄 नेटवर्क वापस आग्या! सेव होए सवाल भेजे जा रहे सैं...",
+    syncDone: "✅ सारे सेव होए सवाल भेजे जा चुके सैं!",
+    syncItem: "📤 सेव होया आइटम भेजा जा रह्या सै",
+    offlineTextSaved: "⚠️ सवाल ऑफलाइन सेव होग्या। नेटवर्क आवै पै आपे भेज्या जावैगा।",
+    offlineImageSaved: "⚠️ फोटो ऑफलाइन सेव होगी ({n}/5)। नेटवर्क आवै पै आपे जाँच होवैगी।",
     scanTipTitle: "📸 बढ़िया फोटो खातिर टिप्स",
     scanTip1: "• बीमार पत्ती या हिस्से के करीब जाओ",
     scanTip2: "• अच्छी रोशनी में फोटो लो",
@@ -234,7 +264,11 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [offlineQueue, setOfflineQueue] = useState<{ type: string; data: string }[]>([]);
+  // offlineQueue is only used as in-memory mirror — real persistence is AsyncStorage
+  const [offlineQueue, setOfflineQueue] = useState<{ type: string; data: string; id: string }[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const OFFLINE_QUEUE_KEY = 'offline_chat_queue';
+  const MAX_QUEUE = 5;
 
   // 🆕 New states
   const [showTipModal, setShowTipModal] = useState(false);
@@ -289,16 +323,72 @@ export default function ChatBot() {
     saveChatHistory();
   }, [messages]);
 
+  // ✅ Load persisted queue from AsyncStorage on mount
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsOffline(state.isConnected === false);
-      if (state.isConnected === true && offlineQueue.length > 0) {
-        setOfflineQueue([]);
-        Alert.alert("Sync Complete", "Farm Sutra synced offline data!");
+    const loadQueue = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
+        if (saved) setOfflineQueue(JSON.parse(saved));
+      } catch (e) { console.log('Queue load error', e); }
+    };
+    loadQueue();
+  }, []);
+
+  // ✅ Real sync — processes every queued item when network returns
+  const processOfflineQueue = async (queue: { type: string; data: string; id: string }[]) => {
+    if (queue.length === 0 || isSyncing) return;
+    setIsSyncing(true);
+    setMessages(prev => [...prev, { id: Date.now(), text: t.syncingMsg, sender: 'bot', type: 'text' }]);
+
+    const remaining = [...queue];
+
+    for (const item of queue) {
+      try {
+        if (item.type === 'text') {
+          const hiddenPrompt = `${item.data}. ${instruction}`;
+          const op = post({ apiName: 'farmsutraApi', path: '/chat', options: { body: { prompt: hiddenPrompt } } });
+          const { body } = await op.response;
+          const res = await body.json() as { reply: string };
+          setMessages(prev => [...prev, { id: Date.now(), text: res.reply, sender: 'bot', type: 'text' }]);
+          await addActivityPoints(ACTIVITIES.CHATBOT_QUERY, lang);
+        } else if (item.type === 'image') {
+          await processScan(item.data);
+        }
+        // Remove successfully processed item from remaining
+        const idx = remaining.findIndex(r => r.id === item.id);
+        if (idx > -1) remaining.splice(idx, 1);
+        // Save updated queue to AsyncStorage after each success
+        await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+        setOfflineQueue([...remaining]);
+      } catch (e) {
+        console.log('Sync item error:', e);
+        // Stop processing on network error — will retry next time online
+        break;
+      }
+    }
+
+    setIsSyncing(false);
+    if (remaining.length === 0) {
+      setMessages(prev => [...prev, { id: Date.now(), text: t.syncDone, sender: 'bot', type: 'text' }]);
+      await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(async state => {
+      const online = state.isConnected === true;
+      setIsOffline(!online);
+      if (online) {
+        // Always load fresh queue from AsyncStorage — in-memory state may be stale after app reopen
+        try {
+          const saved = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
+          const queue = saved ? JSON.parse(saved) : [];
+          if (queue.length > 0) processOfflineQueue(queue);
+        } catch (e) { console.log('Sync load error', e); }
       }
     });
     return () => unsubscribe();
-  }, [offlineQueue]);
+  }, [lang]);
 
   const startListening = () => {
     if (isListening) return;
@@ -346,8 +436,16 @@ export default function ChatBot() {
         if (!asset.base64) return;
 
         if (isOffline) {
-          setOfflineQueue([...offlineQueue, { type: 'image', data: asset.base64 }]);
-          setMessages(prev => [...prev, { id: Date.now(), text: "⚠️ Image saved offline. Will sync when online.", sender: 'bot', type: 'text' }]);
+          if (offlineQueue.length >= MAX_QUEUE) {
+            setMessages(prev => [...prev, { id: Date.now(), text: t.queueFull, sender: 'bot', type: 'text' }]);
+          } else {
+            const newItem = { type: 'image', data: asset.base64, id: Date.now().toString() };
+            const newQueue = [...offlineQueue, newItem];
+            setOfflineQueue(newQueue);
+            await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
+            const msg = t.offlineImageSaved.replace('{n}', String(newQueue.length));
+            setMessages(prev => [...prev, { id: Date.now(), text: msg, sender: 'bot', type: 'text' }]);
+          }
         } else {
           processScan(asset.base64, asset.uri);
         }
@@ -400,8 +498,15 @@ export default function ChatBot() {
     setInputText('');
     
     if (isOffline) {
-      setOfflineQueue([...offlineQueue, { type: 'text', data: userQuery }]);
-      setMessages(prev => [...prev, { id: Date.now()+1, text: "⚠️ Question saved in local storage.", sender: 'bot', type: 'text' }]);
+      if (offlineQueue.length >= MAX_QUEUE) {
+        setMessages(prev => [...prev, { id: Date.now()+1, text: t.queueFull, sender: 'bot', type: 'text' }]);
+      } else {
+        const newItem = { type: 'text', data: userQuery, id: Date.now().toString() };
+        const newQueue = [...offlineQueue, newItem];
+        setOfflineQueue(newQueue);
+        await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
+        setMessages(prev => [...prev, { id: Date.now()+1, text: t.offlineTextSaved, sender: 'bot', type: 'text' }]);
+      }
       return;
     }
     
