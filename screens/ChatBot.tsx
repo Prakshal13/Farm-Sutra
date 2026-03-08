@@ -27,8 +27,8 @@ Amplify.configure(awsconfig);
 const chatDict: any = {
   en: { 
     header: "🤖 Farm Sutra AI", placeholder: "Ask Farm Sutra...", 
-    offline: "Offline. Data saving to device.", thinking: "Farm Sutra is thinking...", 
-    welcome: "Ram Ram! I am Farm Sutra AI.", listening: "Listening...",
+    offline: "You are offline. Please reconnect to ask questions.", thinking: "Farm Sutra is thinking...", 
+    welcome: "Ram Ram! I am Farm Sutra AI.",  listening: "Listening...",
     scanTipTitle: "📸 Photo Tips for Best Diagnosis",
     scanTip1: "• Get close to the affected leaf or area",
     scanTip2: "• Make sure there is good lighting",
@@ -43,7 +43,7 @@ const chatDict: any = {
   },
   hi: { 
     header: "🤖 फार्म सूत्र AI", placeholder: "फार्म सूत्र से पूछें...", 
-    offline: "ऑफ़लाइन। डेटा डिवाइस में सेव हो रहा है।", thinking: "फार्म सूत्र सोच रहा है...", 
+    offline: "आप ऑफ़लाइन हैं। कनेक्ट होने के बाद सवाल पूछें।", thinking: "फार्म सूत्र सोच रहा है...", 
     welcome: "राम राम! मैं फार्म सूत्र AI हूँ।", listening: "सुन रहा हूँ...",
     scanTipTitle: "📸 बेहतर निदान के लिए फोटो टिप्स",
     scanTip1: "• प्रभावित पत्ती या हिस्से के पास जाएं",
@@ -59,7 +59,7 @@ const chatDict: any = {
   },
   ta: { 
     header: "🤖 பார்ம் சூத்திரா AI", placeholder: "கேள்வி கேட்க...", 
-    offline: "ஆஃப்லைன். தரவு சேமிக்கப்படுகிறது.", thinking: "பார்ம் சூத்திரா யோசிக்கிறது...", 
+    offline: "நீங்கள் ஆஃப்லைனில் உள்ளீர்கள். இணைந்த பிறகு கேள்வி கேளுங்கள்.", thinking: "பார்ம் சூத்திரா யோசிக்கிறது...", 
     welcome: "வணக்கம்! நான் பார்ம் சூத்திரா AI.", listening: "கேட்கிறேன்...",
     scanTipTitle: "📸 சிறந்த நோய் கண்டறிதலுக்கான டிப்ஸ்",
     scanTip1: "• பாதிக்கப்பட்ட இலைக்கு அருகில் செல்லுங்கள்",
@@ -75,7 +75,7 @@ const chatDict: any = {
   },
   pa: { 
     header: "🤖 ਫਾਰਮ ਸੂਤਰ AI", placeholder: "ਫਾਰਮ ਸੂਤਰ ਤੋਂ ਪੁੱਛੋ...", 
-    offline: "ਔਫਲਾਈਨ। ਡਾਟਾ ਸੇਵ ਹੋ ਰਿਹਾ ਹੈ।", thinking: "ਫਾਰਮ ਸੂਤਰ ਸੋਚ ਰਿਹਾ ਹੈ...", 
+    offline: "ਤੁਸੀਂ ਔਫਲਾਈਨ ਹੋ। ਕਨੈਕਟ ਹੋਣ ਤੋਂ ਬਾਅਦ ਸਵਾਲ ਪੁੱਛੋ।", thinking: "ਫਾਰਮ ਸੂਤਰ ਸੋਚ ਰਿਹਾ ਹੈ...", 
     welcome: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਫਾਰਮ ਸੂਤਰ AI ਹਾਂ।", listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ...",
     scanTipTitle: "📸 ਵਧੀਆ ਤਸਵੀਰ ਲਈ ਸੁਝਾਅ",
     scanTip1: "• ਪ੍ਰਭਾਵਿਤ ਪੱਤੇ ਦੇ ਨੇੜੇ ਜਾਓ",
@@ -91,7 +91,7 @@ const chatDict: any = {
   },
   hr: { 
     header: "🤖 फार्म सूत्र AI", placeholder: "फार्म सूत्र तै पूछो...", 
-    offline: "ऑफलाइन। डेटा डिवाइस में सेव हो रह्या सै।", thinking: "फार्म सूत्र सोच रहा सै...", 
+    offline: "नेटवर्क कोन्या। जुड़ण के बाद सवाल पूछो।", thinking: "फार्म सूत्र सोच रहा सै...", 
     welcome: "राम राम! मैं फार्म सूत्र AI सूँ।", listening: "सुणु सूँ...",
     scanTipTitle: "📸 बढ़िया फोटो खातिर टिप्स",
     scanTip1: "• बीमार पत्ती या हिस्से के करीब जाओ",
@@ -234,16 +234,15 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [offlineQueue, setOfflineQueue] = useState<{ type: string; data: string }[]>([]);
 
-  // 🆕 New states
+  // Scan UI states
   const [showTipModal, setShowTipModal] = useState(false);
   const [isScanLoading, setIsScanLoading] = useState(false);
   const dotAnim1 = useRef(new Animated.Value(0)).current;
   const dotAnim2 = useRef(new Animated.Value(0)).current;
   const dotAnim3 = useRef(new Animated.Value(0)).current;
 
-  // 🆕 Animated bouncing dots for scan overlay
+  // Animated bouncing dots for scan overlay
   useEffect(() => {
     if (isScanLoading) {
       const animateDot = (anim: Animated.Value, delay: number) =>
@@ -264,6 +263,7 @@ export default function ChatBot() {
     }
   }, [isScanLoading]);
 
+  // Load chat history from AsyncStorage
   useEffect(() => {
     const loadChatHistory = async () => {
       try {
@@ -278,6 +278,7 @@ export default function ChatBot() {
     loadChatHistory();
   }, [lang]);
 
+  // Save chat history to AsyncStorage on every update
   useEffect(() => {
     const saveChatHistory = async () => {
       try {
@@ -289,16 +290,13 @@ export default function ChatBot() {
     saveChatHistory();
   }, [messages]);
 
+  // Simple NetInfo listener — just track online/offline state
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsOffline(state.isConnected === false);
-      if (state.isConnected === true && offlineQueue.length > 0) {
-        setOfflineQueue([]);
-        Alert.alert("Sync Complete", "Farm Sutra synced offline data!");
-      }
     });
     return () => unsubscribe();
-  }, [offlineQueue]);
+  }, []);
 
   const startListening = () => {
     if (isListening) return;
@@ -310,14 +308,19 @@ export default function ChatBot() {
     }, 2000);
   };
 
-  // 🆕 Tapping camera opens tip modal first
+  // Tapping camera opens tip modal first
   const pickImage = () => {
     setShowTipModal(true);
   };
 
-  // 🆕 Called when user taps Camera or Gallery inside tip modal
+  // Called when user taps Camera or Gallery inside tip modal
   const handleImageSource = async (source: 'camera' | 'gallery') => {
     setShowTipModal(false);
+
+    if (isOffline) {
+      setMessages(prev => [...prev, { id: Date.now(), text: t.offline, sender: 'bot', type: 'text' }]);
+      return;
+    }
 
     try {
       let result;
@@ -327,7 +330,7 @@ export default function ChatBot() {
         if (!perm.granted) { Alert.alert("Permission Required", "Camera access needed!"); return; }
         result = await ImagePicker.launchCameraAsync({
           allowsEditing: true, aspect: [4, 3],
-          quality: 0.5,   // 🆕 0.3 → 0.5: better diagnosis accuracy, still 2G-friendly
+          quality: 0.5,
           base64: true,
         });
       } else {
@@ -344,21 +347,13 @@ export default function ChatBot() {
       if (!result.canceled && result.assets) {
         const asset = result.assets[0];
         if (!asset.base64) return;
-
-        if (isOffline) {
-          setOfflineQueue([...offlineQueue, { type: 'image', data: asset.base64 }]);
-          setMessages(prev => [...prev, { id: Date.now(), text: "⚠️ Image saved offline. Will sync when online.", sender: 'bot', type: 'text' }]);
-        } else {
-          processScan(asset.base64, asset.uri);
-        }
+        processScan(asset.base64, asset.uri);
       }
     } catch (error) { console.log(error); }
   };
 
-  // 🆕 processScan shows photo thumbnail and fullscreen overlay
+  // Show photo thumbnail and fullscreen overlay during scan
   const processScan = async (img: string, localUri?: string) => {
-
-    // 🆕 Show photo bubble immediately using local URI (zero extra bandwidth)
     if (localUri) {
       setMessages(prev => [...prev, {
         id: Date.now(), imageUri: localUri,
@@ -366,7 +361,6 @@ export default function ChatBot() {
       }]);
     }
 
-    // 🆕 Show fullscreen scan overlay
     setIsScanLoading(true);
 
     try {
@@ -398,13 +392,12 @@ export default function ChatBot() {
     const userQuery = inputText;
     setMessages(prev => [...prev, { id: Date.now(), text: userQuery, sender: 'user', type: 'text' }]);
     setInputText('');
-    
+
     if (isOffline) {
-      setOfflineQueue([...offlineQueue, { type: 'text', data: userQuery }]);
-      setMessages(prev => [...prev, { id: Date.now()+1, text: "⚠️ Question saved in local storage.", sender: 'bot', type: 'text' }]);
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: t.offline, sender: 'bot', type: 'text' }]);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const hiddenPrompt = `${userQuery}. ${instruction}`;
@@ -412,7 +405,7 @@ export default function ChatBot() {
       const { body } = await op.response;
       const res = await body.json() as { reply: string };
       setMessages(prev => [...prev, { id: Date.now() + 1, text: res.reply, sender: 'bot', type: 'text' }]);
-      
+
       // 🔥 SCORE UPDATE + POPUP 🔥
       await addActivityPoints(ACTIVITIES.CHATBOT_QUERY, lang);
 
@@ -428,7 +421,6 @@ export default function ChatBot() {
         <ScrollView style={styles.mainScroll} contentContainerStyle={{ padding: 20 }}>
           {messages.map((msg) => (
             <View key={msg.id} style={[styles.bubble, msg.sender === 'user' ? styles.userBubble : styles.botBubble]}>
-              {/* 🆕 Image bubble — shows thumbnail using local URI, zero bandwidth */}
               {msg.type === 'image' && msg.imageUri ? (
                 <View>
                   <Image source={{ uri: msg.imageUri }} style={styles.thumbnailImg} resizeMode="cover" />
@@ -468,7 +460,7 @@ export default function ChatBot() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* 🆕 TIP MODAL — photo tips + Camera vs Gallery choice in one clean sheet */}
+      {/* TIP MODAL — photo tips + Camera vs Gallery choice */}
       <Modal visible={showTipModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.tipSheet}>
@@ -493,7 +485,7 @@ export default function ChatBot() {
         </View>
       </Modal>
 
-      {/* 🆕 FULLSCREEN SCANNING OVERLAY — shows during Bedrock processing */}
+      {/* FULLSCREEN SCANNING OVERLAY — shows during Bedrock processing */}
       <Modal visible={isScanLoading} transparent animationType="fade">
         <View style={styles.scanOverlay}>
           <View style={styles.scanCard}>
