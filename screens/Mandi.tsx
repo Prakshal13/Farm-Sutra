@@ -61,7 +61,7 @@ const INITIAL_BUY_ORDERS: BuyOrder[] = [
 const T: any = {
   en: {
     title: '🛒 Farm Sutra Mandi',
-    buyTab: 'Buyer Demand', sellTab: "Farmer's Produce",
+    buyTab: 'Buyer Demand', sellTab: "Farmer's Crop",
     buyAction: 'Contact Buyer', sellAction: 'Contact Farmer',
     crop: 'Crop', qty: 'Qty', price: 'Price',
     addBtn: '+ Add Crop', cancel: 'Cancel', submit: 'Submit',
