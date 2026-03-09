@@ -64,7 +64,7 @@ const T: any = {
     buyTab: 'Buyer Demand', sellTab: "Farmer's Produce",
     buyAction: 'Contact Buyer', sellAction: 'Contact Farmer',
     crop: 'Crop', qty: 'Qty', price: 'Price',
-    addBtn: '+ Add Produce', cancel: 'Cancel', submit: 'Submit',
+    addBtn: '+ Add Crop', cancel: 'Cancel', submit: 'Submit',
     enterCrop: 'Crop Name (e.g. Wheat)',
     enterQty: 'Quantity (e.g. 50 Qtl)',
     enterPrice: 'Price (e.g. ₹2200/q)',
