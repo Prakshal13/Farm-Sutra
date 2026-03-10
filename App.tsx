@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -83,6 +84,7 @@ export default function App() {
           <Stack.Screen name="MainTabs" component={MainTabs} />
         </Stack.Navigator>
       </NavigationContainer>
+      <Analytics />
     </LanguageProvider>
   );
 }
