@@ -8,30 +8,30 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
-import { LanguageContext } from '../LanguageContext';
+import { LanguageContext } from '../context/LanguageContext';
 import { addActivityPoints, ACTIVITIES } from './CreditScore';
 
 // ─────────────────────────────────────────────────────────
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────
-const STORAGE_KEY      = 'mandi_sell_orders';
-const EXPIRY_DAYS      = 15;
-const MS_PER_DAY       = 1000 * 60 * 60 * 24;
+const STORAGE_KEY = 'mandi_sell_orders';
+const EXPIRY_DAYS = 15;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // ─────────────────────────────────────────────────────────
 //  TYPES
 // ─────────────────────────────────────────────────────────
 interface SellOrder {
   id: string;
-  nameKey: string;           // 'farmUser' for user-added
-  crop: string;              // literal string typed by farmer
+  nameKey: string;
+  crop: string;
   qty: string;
   price: string;
   rating: string;
   verified: boolean;
   phone: string;
-  createdAt: number;         // timestamp
-  expiresAt: number;         // createdAt + 15 days
+  createdAt: number;
+  expiresAt: number;
   status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
   buyerContacted: boolean;
 }
@@ -48,15 +48,15 @@ interface BuyOrder {
 }
 
 // ─────────────────────────────────────────────────────────
-//  STATIC BUY ORDERS (traders — not farmer-added)
+//  STATIC BUY ORDERS
 // ─────────────────────────────────────────────────────────
 const INITIAL_BUY_ORDERS: BuyOrder[] = [
-  { id: '1', nameKey: 'ramesh', cropKey: 'wheat',  qty: '500 Quintal', price: '₹2,275/q', rating: '4.8', verified: true, phone: '9999999999' },
-  { id: '2', nameKey: 'kisaan', cropKey: 'potato', qty: '200 Tonne',   price: '₹1,200/q', rating: '4.5', verified: true, phone: '8888888888' },
+  { id: '1', nameKey: 'ramesh', cropKey: 'wheat', qty: '500 Quintal', price: '₹2,275/q', rating: '4.8', verified: true, phone: '9999999999' },
+  { id: '2', nameKey: 'kisaan', cropKey: 'potato', qty: '200 Tonne', price: '₹1,200/q', rating: '4.5', verified: true, phone: '8888888888' },
 ];
 
 // ─────────────────────────────────────────────────────────
-//  TRANSLATIONS — all 5 languages, every string
+//  TRANSLATIONS
 // ─────────────────────────────────────────────────────────
 const T: any = {
   en: {
@@ -174,12 +174,9 @@ const T: any = {
 // ─────────────────────────────────────────────────────────
 //  HELPERS
 // ─────────────────────────────────────────────────────────
-
-// How many days until this listing expires (can be negative = already expired)
 const daysUntilExpiry = (expiresAt: number): number =>
   Math.ceil((expiresAt - Date.now()) / MS_PER_DAY);
 
-// Check if farmer already listed this exact crop name today
 const alreadyListedCropToday = async (cropName: string): Promise<boolean> => {
   try {
     const key = `last_listing_${cropName.trim().toLowerCase()}`;
@@ -188,7 +185,6 @@ const alreadyListedCropToday = async (cropName: string): Promise<boolean> => {
   } catch { return false; }
 };
 
-// Record that farmer listed this crop today (for daily cap tracking)
 const recordCropListingToday = async (cropName: string) => {
   try {
     const key = `last_listing_${cropName.trim().toLowerCase()}`;
@@ -203,18 +199,17 @@ export default function Mandi() {
   const { lang } = useContext(LanguageContext);
   const t = T[lang] || T['en'];
 
-  const [activeTab, setActiveTab]       = useState<'BUY' | 'SELL'>('BUY');
-  const [sellOrders, setSellOrders]     = useState<SellOrder[]>([]);
+  const [activeTab, setActiveTab] = useState<'BUY' | 'SELL'>('BUY');
+  const [sellOrders, setSellOrders] = useState<SellOrder[]>([]);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [newCrop, setNewCrop]           = useState('');
-  const [newQty, setNewQty]             = useState('');
-  const [newPrice, setNewPrice]         = useState('');
-  const [newPhone, setNewPhone]         = useState('');
+  const [newCrop, setNewCrop] = useState('');
+  const [newQty, setNewQty] = useState('');
+  const [newPrice, setNewPrice] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [liveLocation, setLiveLocation] = useState('Fetching GPS...');
-  const [liveTemp, setLiveTemp]         = useState('--°C');
+  const [liveTemp, setLiveTemp] = useState('--°C');
   const [isWeatherLoading, setIsWeatherLoading] = useState(true);
 
-  // ── Load + auto-expire listings from AsyncStorage ──
   const loadOrders = useCallback(async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -222,21 +217,18 @@ export default function Mandi() {
         const parsed: SellOrder[] = JSON.parse(raw);
         const now = Date.now();
 
-        // Mark listings as EXPIRED if past 15 days and still ACTIVE
         const updated = parsed.map(order =>
           order.status === 'ACTIVE' && now > order.expiresAt
             ? { ...order, status: 'EXPIRED' as const }
             : order
         );
 
-        // If anything was expired, save the updated list back
         if (updated.some((o, i) => o.status !== parsed[i].status)) {
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         }
 
         setSellOrders(updated);
       } else {
-        // Seed: one default listing so the screen isn't empty on first launch
         const defaultOrder: SellOrder = {
           id: '3',
           nameKey: 'suresh',
@@ -256,14 +248,12 @@ export default function Mandi() {
     } catch (e) { console.log('Load error:', e); }
   }, []);
 
-  // Reload every time tab is focused (so score-related changes reflect)
   useFocusEffect(
     useCallback(() => {
       loadOrders();
     }, [loadOrders])
   );
 
-  // ── Live weather ──
   useEffect(() => {
     const fetchLiveWeather = async () => {
       try {
@@ -282,7 +272,7 @@ export default function Mandi() {
           setLiveLocation(`${city}, ${geocode[0].country}`);
         }
 
-        const res  = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
         const data = await res.json();
         if (data?.current_weather) setLiveTemp(`${data.current_weather.temperature}°C`);
       } catch {
@@ -294,37 +284,33 @@ export default function Mandi() {
     fetchLiveWeather();
   }, []);
 
-  // ── Save orders whenever they change ──
   const saveOrders = async (orders: SellOrder[]) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
     } catch (e) { console.log('Save error:', e); }
   };
 
-  // ─────────────────────────────────────────────
-  //  ADD NEW LISTING
-  // ─────────────────────────────────────────────
   const addNewItem = async () => {
     if (!newCrop.trim() || !newQty.trim() || !newPrice.trim() || !newPhone.trim()) {
       Alert.alert('⚠️', t.incompleteDetails);
       return;
     }
 
-    const now       = Date.now();
-    const cropName  = newCrop.trim();
+    const now = Date.now();
+    const cropName = newCrop.trim();
 
     const newOrder: SellOrder = {
-      id:             now.toString(),
-      nameKey:        'farmUser',
-      crop:           cropName,
-      qty:            newQty.trim(),
-      price:          newPrice.trim(),
-      rating:         'New',
-      verified:       true,
-      phone:          newPhone.trim(),
-      createdAt:      now,
-      expiresAt:      now + (EXPIRY_DAYS * MS_PER_DAY),
-      status:         'ACTIVE',
+      id: now.toString(),
+      nameKey: 'farmUser',
+      crop: cropName,
+      qty: newQty.trim(),
+      price: newPrice.trim(),
+      rating: 'New',
+      verified: true,
+      phone: newPhone.trim(),
+      createdAt: now,
+      expiresAt: now + (EXPIRY_DAYS * MS_PER_DAY),
+      status: 'ACTIVE',
       buyerContacted: false,
     };
 
@@ -332,21 +318,15 @@ export default function Mandi() {
     setSellOrders(updated);
     await saveOrders(updated);
 
-    // Close modal & reset form
     setModalVisible(false);
     setNewCrop(''); setNewQty(''); setNewPrice(''); setNewPhone('');
 
-    // ── DAILY CAP PER CROP ──
-    // Rule: +40 pts awarded once per crop name per day.
-    // If farmer lists same crop again same day (split sale) → listing added, no duplicate points.
     const listedToday = await alreadyListedCropToday(cropName);
 
     if (!listedToday) {
-      // First listing of this crop today → full points
       await recordCropListingToday(cropName);
       await addActivityPoints(ACTIVITIES.MANDI_LISTING, lang);
     } else {
-      // Split sale same day → listing recorded, info shown, no extra points
       setTimeout(() => {
         Alert.alert(
           '📋',
@@ -356,23 +336,15 @@ export default function Mandi() {
     }
   };
 
-  // ─────────────────────────────────────────────
-  //  MARK AS SOLD
-  // ─────────────────────────────────────────────
   const markAsSold = async (orderId: string) => {
     const updated = sellOrders.map(o =>
       o.id === orderId ? { ...o, status: 'SOLD' as const } : o
     );
     setSellOrders(updated);
     await saveOrders(updated);
-
-    // +35 points for confirmed sale
     await addActivityPoints(ACTIVITIES.MANDI_SOLD, lang);
   };
 
-  // ─────────────────────────────────────────────
-  //  WHATSAPP CONTACT
-  // ─────────────────────────────────────────────
   const openWhatsApp = async (
     name: string,
     crop: string,
@@ -390,7 +362,6 @@ export default function Mandi() {
       }
       await Linking.openURL(url);
 
-      // Mark this listing as contacted + award points
       if (orderId) {
         const updated = sellOrders.map(o =>
           o.id === orderId ? { ...o, buyerContacted: true } : o
@@ -405,32 +376,26 @@ export default function Mandi() {
     }
   };
 
-  // ─────────────────────────────────────────────
-  //  RENDER SELL CARD
-  // ─────────────────────────────────────────────
   const renderSellCard = ({ item }: { item: SellOrder }) => {
     const displayName = item.nameKey ? t.traders[item.nameKey] : 'Farmer';
-    const days        = daysUntilExpiry(item.expiresAt);
-    const isSold      = item.status === 'SOLD';
-    const isExpired   = item.status === 'EXPIRED';
+    const days = daysUntilExpiry(item.expiresAt);
+    const isSold = item.status === 'SOLD';
+    const isExpired = item.status === 'EXPIRED';
 
-    // Countdown color
-    const countdownColor = days <= 1 ? '#DC2626' : days <= 5 ? '#D97706' : '#555';
+    const countdownColor = days <= 1 ? '#DC2626' : days <= 5 ? '#D05A22' : '#737A71';
 
     return (
       <View style={[
         styles.card,
-        isSold    && styles.soldCard,
+        isSold && styles.soldCard,
         isExpired && styles.expiredCard,
       ]}>
-        {/* ── Card Header ── */}
         <View style={styles.cardHeader}>
           <View style={styles.nameRow}>
             <Text style={styles.nameText}>{displayName}</Text>
-            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#2E7D32" style={styles.verifyIcon} />}
+            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#0284C7" style={styles.verifyIcon} />}
           </View>
           <View style={styles.rightHeader}>
-            {/* Status badge */}
             {isSold ? (
               <View style={styles.soldBadge}>
                 <Text style={styles.soldBadgeText}>{t.soldBadge}</Text>
@@ -441,21 +406,19 @@ export default function Mandi() {
               </View>
             ) : (
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={13} color="#FFD700" />
+                <Ionicons name="star" size={13} color="#D05A22" />
                 <Text style={styles.ratingText}>{item.rating}</Text>
               </View>
             )}
           </View>
         </View>
 
-        {/* ── Card Body ── */}
         <View style={styles.cardBody}>
           <Text style={styles.cropText}>🌾 {t.crop}: {item.crop}</Text>
           <Text style={styles.detailText}>📦 {t.qty}: {item.qty}</Text>
           <Text style={styles.priceText}>💰 {t.price}: {item.price}</Text>
         </View>
 
-        {/* ── Expiry Countdown (only for ACTIVE) ── */}
         {!isSold && !isExpired && (
           <View style={styles.countdownRow}>
             <Ionicons name="time-outline" size={14} color={countdownColor} />
@@ -472,7 +435,6 @@ export default function Mandi() {
           </View>
         )}
 
-        {/* ── Action Buttons (only for ACTIVE) ── */}
         {!isSold && !isExpired && (
           <View style={styles.actionRow}>
             <TouchableOpacity
@@ -495,22 +457,19 @@ export default function Mandi() {
     );
   };
 
-  // ─────────────────────────────────────────────
-  //  RENDER BUY CARD (traders — no expiry logic)
-  // ─────────────────────────────────────────────
   const renderBuyCard = ({ item }: { item: BuyOrder }) => {
     const displayName = t.traders[item.nameKey] || item.nameKey;
-    const displayCrop = t.crops[item.cropKey]   || item.cropKey;
+    const displayCrop = t.crops[item.cropKey] || item.cropKey;
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.nameRow}>
             <Text style={styles.nameText}>{displayName}</Text>
-            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#2E7D32" style={styles.verifyIcon} />}
+            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#0284C7" style={styles.verifyIcon} />}
           </View>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={13} color="#FFD700" />
+            <Ionicons name="star" size={13} color="#D05A22" />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
         </View>
@@ -530,18 +489,12 @@ export default function Mandi() {
     );
   };
 
-  // ─────────────────────────────────────────────
-  //  RENDER
-  // ─────────────────────────────────────────────
   return (
     <View style={styles.safeArea}>
-
-      {/* ── Header ── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.title}</Text>
       </View>
 
-      {/* ── Live Weather Card ── */}
       <View style={styles.weatherCard}>
         <View style={styles.weatherRow}>
           <View>
@@ -553,14 +506,13 @@ export default function Mandi() {
               : <Text style={styles.weatherTemp}>{liveTemp} | Live</Text>
             }
           </View>
-          <Ionicons name="partly-sunny" size={40} color="#FFD700" />
+          <Ionicons name="partly-sunny" size={40} color="#FBBF24" />
         </View>
         <View style={styles.adviceBox}>
           <Text style={styles.adviceText}>{t.advice}</Text>
         </View>
       </View>
 
-      {/* ── BUY / SELL Toggle ── */}
       <View style={styles.toggleContainer}>
         <TouchableOpacity
           style={[styles.toggleBtn, activeTab === 'BUY' && styles.activeToggle]}
@@ -580,14 +532,12 @@ export default function Mandi() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Add Produce Button ── */}
       {activeTab === 'SELL' && (
         <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
           <Text style={styles.addBtnText}>{t.addBtn}</Text>
         </TouchableOpacity>
       )}
 
-      {/* ── List ── */}
       {activeTab === 'BUY' ? (
         <FlatList
           data={INITIAL_BUY_ORDERS}
@@ -606,9 +556,6 @@ export default function Mandi() {
         />
       )}
 
-      {/* ════════════════════════════════════════
-           ADD PRODUCE MODAL
-          ════════════════════════════════════════ */}
       <Modal visible={isModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -616,28 +563,28 @@ export default function Mandi() {
 
             <TextInput
               style={styles.input}
-              placeholderTextColor="#888"
+              placeholderTextColor="#737A71"
               placeholder={t.enterCrop}
               value={newCrop}
               onChangeText={setNewCrop}
             />
             <TextInput
               style={styles.input}
-              placeholderTextColor="#888"
+              placeholderTextColor="#737A71"
               placeholder={t.enterQty}
               value={newQty}
               onChangeText={setNewQty}
             />
             <TextInput
               style={styles.input}
-              placeholderTextColor="#888"
+              placeholderTextColor="#737A71"
               placeholder={t.enterPrice}
               value={newPrice}
               onChangeText={setNewPrice}
             />
             <TextInput
               style={styles.input}
-              placeholderTextColor="#888"
+              placeholderTextColor="#737A71"
               placeholder={t.enterPhone}
               value={newPhone}
               onChangeText={setNewPhone}
@@ -662,81 +609,85 @@ export default function Mandi() {
 }
 
 // ─────────────────────────────────────────────────────────
-//  STYLES
+//  STYLES: Lighter "Warm Minimalism" (Warm Moss & Almond)
 // ─────────────────────────────────────────────────────────
 const paddingTopOS = Platform.OS === 'ios' ? 50 : RNStatusBar.currentHeight || 0;
 
 const styles = StyleSheet.create({
-  safeArea:     { flex: 1, backgroundColor: '#F9F9F9', paddingTop: paddingTopOS },
-  header:       { backgroundColor: '#1E3F20', paddingVertical: 15, alignItems: 'center' },
-  headerTitle:  { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  // APP BACKGROUND: Almond Oat (Warm, bright, glare-free)
+  safeArea: { flex: 1, backgroundColor: '#F7F7F3', paddingTop: paddingTopOS },
 
-  // Weather
-  weatherCard:  { backgroundColor: '#2E7D32', margin: 10, borderRadius: 12, padding: 15, elevation: 4 },
-  weatherRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  weatherLoc:   { color: '#E8F5E9', fontSize: 14, fontWeight: 'bold' },
-  weatherTemp:  { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginTop: 5 },
-  adviceBox:    { backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 8 },
-  adviceText:   { color: '#FFF', fontSize: 13, fontStyle: 'italic', fontWeight: 'bold' },
+  // HEADER: Charcoal Olive (Softer anchor, highly readable)
+  header: { backgroundColor: '#2C332A', paddingVertical: 15, alignItems: 'center' },
+  headerTitle: { color: '#F7F7F3', fontSize: 20, fontWeight: 'bold', letterSpacing: 0.5 },
 
-  // Toggle
-  toggleContainer:    { flexDirection: 'row', padding: 10, backgroundColor: '#FFF', elevation: 2 },
-  toggleBtn:          { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 20 },
-  activeToggle:       { backgroundColor: '#2E7D32' },
-  toggleText:         { fontSize: 16, fontWeight: 'bold', color: '#666' },
-  activeToggleText:   { color: '#FFF' },
+  // WEATHER CARD: Warm Moss (Organic earthy green)
+  weatherCard: { backgroundColor: '#4A7240', margin: 10, borderRadius: 16, padding: 18, elevation: 2 },
+  weatherRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  weatherLoc: { color: '#EAF0E9', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  weatherTemp: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', marginTop: 4 },
+  adviceBox: { backgroundColor: 'rgba(255,255,255,0.15)', padding: 12, borderRadius: 10, marginTop: 5 },
+  adviceText: { color: '#FFFFFF', fontSize: 13, fontStyle: 'italic', fontWeight: '600' },
 
-  addBtn:     { backgroundColor: '#FF9800', margin: 15, padding: 15, borderRadius: 10, alignItems: 'center', elevation: 3 },
-  addBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  // TOGGLES: Clean white pill with Soft Terracotta active state
+  toggleContainer: { flexDirection: 'row', padding: 8, backgroundColor: '#FFFFFF', marginHorizontal: 10, borderRadius: 12, elevation: 1, marginBottom: 5 },
+  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
+  activeToggle: { backgroundColor: '#D05A22', shadowColor: '#D05A22', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  toggleText: { fontSize: 15, fontWeight: '700', color: '#889384' },
+  activeToggleText: { color: '#FFFFFF' },
 
-  // Cards
-  card:        { backgroundColor: '#FFF', borderRadius: 10, padding: 15, marginBottom: 15, elevation: 3 },
-  soldCard:    { backgroundColor: '#F0FFF4', borderWidth: 1, borderColor: '#4CAF50' },
-  expiredCard: { backgroundColor: '#F5F5F5', opacity: 0.8 },
+  // CALL TO ACTION: Soft Terracotta
+  addBtn: { backgroundColor: '#D05A22', marginHorizontal: 15, marginTop: 10, marginBottom: 5, padding: 16, borderRadius: 12, alignItems: 'center', elevation: 2 },
+  addBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
 
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 10 },
-  nameRow:    { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  nameText:   { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  verifyIcon: { marginLeft: 5 },
-  rightHeader:{ alignItems: 'flex-end' },
+  // CARDS: Pure white surfaces
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
+  soldCard: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB' },
+  expiredCard: { backgroundColor: '#F3F4F6', opacity: 0.7 },
 
-  ratingRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF9C4', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
-  ratingText: { marginLeft: 3, fontSize: 12, fontWeight: 'bold', color: '#F57F17' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F0F0EE', paddingBottom: 12, marginBottom: 12 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  nameText: { fontSize: 17, fontWeight: '800', color: '#2C332A' },
 
-  soldBadge:      { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, borderWidth: 1, borderColor: '#4CAF50' },
-  soldBadgeText:  { color: '#2E7D32', fontSize: 12, fontWeight: 'bold' },
-  expiredBadge:   { backgroundColor: '#F5F5F5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  expiredBadgeText: { color: '#999', fontSize: 12, fontWeight: 'bold' },
+  // VERIFICATION: Friendly Trust Blue
+  verifyIcon: { marginLeft: 6, color: '#0284C7' },
+  rightHeader: { alignItems: 'flex-end' },
 
-  cardBody:   { marginBottom: 10 },
-  cropText:   { fontSize: 16, fontWeight: 'bold', color: '#1E3F20', marginBottom: 5 },
-  detailText: { fontSize: 14, color: '#555', marginBottom: 5 },
-  priceText:  { fontSize: 15, fontWeight: 'bold', color: '#2E7D32' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7ED', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  ratingText: { marginLeft: 4, fontSize: 12, fontWeight: '800', color: '#D05A22' },
 
-  // Countdown
-  countdownRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  countdownText:   { fontSize: 12, fontWeight: '600', marginLeft: 4 },
-  contactedPill:   { marginLeft: 8, backgroundColor: '#E8F5E9', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
-  contactedPillText: { fontSize: 11 },
+  soldBadge: { backgroundColor: '#F0F5F1', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#4A7240' },
+  soldBadgeText: { color: '#4A7240', fontSize: 12, fontWeight: '800' },
+  expiredBadge: { backgroundColor: '#F0F0EE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  expiredBadgeText: { color: '#889384', fontSize: 12, fontWeight: '800' },
 
-  // Action buttons (sell cards)
-  actionRow:        { flexDirection: 'row', gap: 8 },
-  whatsappBtn:      { flex: 1, flexDirection: 'row', backgroundColor: '#E8F5E9', paddingVertical: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#25D366' },
-  soldBtn:          { flex: 1, backgroundColor: '#FFF9C4', paddingVertical: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FBC02D' },
-  soldBtnText:      { color: '#F57F17', fontWeight: 'bold', fontSize: 13 },
-  whatsappBtnText:  { color: '#2E7D32', fontWeight: 'bold', fontSize: 13 },
+  cardBody: { marginBottom: 15 },
+  cropText: { fontSize: 17, fontWeight: '800', color: '#2C332A', marginBottom: 6 },
+  detailText: { fontSize: 15, color: '#5C6658', marginBottom: 6, fontWeight: '500' },
+  priceText: { fontSize: 16, fontWeight: '800', color: '#4A7240' }, // Moss Green for money
 
-  // Buy card full-width button
-  fullWhatsappBtn: { flexDirection: 'row', backgroundColor: '#E8F5E9', paddingVertical: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#25D366' },
+  countdownRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  countdownText: { fontSize: 13, fontWeight: '700', marginLeft: 6 },
+  contactedPill: { marginLeft: 10, backgroundColor: '#F0F9FF', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  contactedPillText: { fontSize: 12 },
 
-  // Modal
-  modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent:  { backgroundColor: '#FFF', padding: 20, borderRadius: 15 },
-  modalTitle:    { fontSize: 20, fontWeight: 'bold', color: '#1E3F20', marginBottom: 15 },
-  input:         { backgroundColor: '#F0F0F0', padding: 12, borderRadius: 8, marginBottom: 10, fontSize: 16, color: '#333' },
-  modalActions:  { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
-  cancelBtn:     { padding: 10, marginRight: 10 },
-  cancelBtnText: { color: '#666', fontSize: 16, fontWeight: 'bold' },
-  submitBtn:     { backgroundColor: '#2E7D32', padding: 10, borderRadius: 8, paddingHorizontal: 20 },
-  submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  // SECONDARY ACTIONS: Subtle, clean
+  actionRow: { flexDirection: 'row', gap: 10 },
+  whatsappBtn: { flex: 1, flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
+  soldBtn: { flex: 1, backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
+  soldBtnText: { color: '#5C6658', fontWeight: '800', fontSize: 14 },
+  whatsappBtnText: { color: '#2C332A', fontWeight: '800', fontSize: 14 },
+
+  fullWhatsappBtn: { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
+
+  // MODALS
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(44, 51, 42, 0.85)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 20, elevation: 10 },
+  modalTitle: { fontSize: 22, fontWeight: '900', color: '#2C332A', marginBottom: 20 },
+  input: { backgroundColor: '#F7F7F3', padding: 15, borderRadius: 12, marginBottom: 12, fontSize: 16, color: '#2C332A', fontWeight: '500', borderWidth: 1, borderColor: '#EBECE9' },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 15 },
+  cancelBtn: { padding: 12, marginRight: 15, justifyContent: 'center' },
+  cancelBtnText: { color: '#889384', fontSize: 16, fontWeight: '800' },
+  submitBtn: { backgroundColor: '#D05A22', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, elevation: 2 },
+  submitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

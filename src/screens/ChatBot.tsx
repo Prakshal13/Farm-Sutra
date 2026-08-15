@@ -16,8 +16,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // AWS IMPORTS
 import { Amplify } from 'aws-amplify';
 import { post } from 'aws-amplify/api';
-import awsconfig from '../src/aws-exports'; 
-import { LanguageContext } from '../LanguageContext';
+import awsconfig from '../aws-exports'; 
+import { LanguageContext } from '../context/LanguageContext';
 
 // 🔥 CREDIT SCORE IMPORT 🔥
 import { addActivityPoints, ACTIVITIES } from './CreditScore';

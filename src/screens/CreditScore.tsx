@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { LanguageContext } from '../LanguageContext';
+import { LanguageContext } from '../context/LanguageContext';
 
 // 🔥 TAB REFRESH KE LIYE IMPORT 🔥
 import { useFocusEffect } from '@react-navigation/native';

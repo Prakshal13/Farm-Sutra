@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "experiments": {
+      "css": true
+    },
     "platforms": ["ios", "android", "web"],
     "splash": {
       "image": "./assets/splash.png",
@@ -23,6 +26,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png",
       "name": "Farm Sutra",
       "shortName": "Farm Sutra",
