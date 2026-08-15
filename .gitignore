@@ -94,3 +94,5 @@ amplifytools.xcconfig
 # awsconfiguration.json
 # amplifyconfiguration.json
 # amplifyconfiguration.dart
+.vercel
+.env*
