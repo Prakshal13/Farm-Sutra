@@ -12,6 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import * as Speech from 'expo-speech';
+import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
 
 // AWS IMPORTS
 import { Amplify } from 'aws-amplify';
@@ -300,14 +303,100 @@ export default function ChatBot() {
     return () => unsubscribe();
   }, [offlineQueue]);
 
-  const startListening = () => {
-    if (isListening) return;
+  // Voice Setup
+  useEffect(() => {
+    Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+      if (e.value && e.value.length > 0) setInputText(e.value[0]);
+      setIsListening(false);
+    };
+    Voice.onSpeechError = (e: SpeechErrorEvent) => {
+      console.log("Speech Error:", e);
+      setIsListening(false);
+    };
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const startListening = async () => {
+    if (isListening) {
+      if (Platform.OS === 'web') {
+        if ((window as any).recognition) {
+          (window as any).recognition.stop();
+        }
+      } else {
+        try { await Voice.stop(); } catch (e) {}
+      }
+      setIsListening(false);
+      return;
+    }
+    
     setIsListening(true);
     setInputText(t.listening);
-    setTimeout(() => {
+
+    const localeMap: any = { en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', pa: 'pa-IN', hr: 'hi-IN' };
+    const selectedLang = localeMap[lang] || 'en-IN';
+
+    // 🌐 VERCEL / WEB FALLBACK: Uses browser's native speech recognition
+    if (Platform.OS === 'web') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        (window as any).recognition = recognition;
+        recognition.lang = selectedLang;
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setInputText(transcript);
+          setIsListening(false);
+        };
+        recognition.onerror = (event: any) => {
+          console.error("Web Speech Error:", event.error);
+          setIsListening(false);
+        };
+        recognition.onend = () => setIsListening(false);
+        
+        recognition.start();
+      } else {
+        Alert.alert("Browser Not Supported", "Your web browser does not support voice dictation. Please type your question.");
+        setIsListening(false);
+      }
+      return;
+    }
+
+    // 📱 NATIVE iOS / ANDROID
+    try {
+      // HACKATHON PRESENTATION MODE: Apple's Simulator doesn't support Speech Recognition hardware.
+      // We auto-fill a sample question after 3 seconds so you can demo it smoothly in the Simulator!
+      setTimeout(() => {
+        setIsListening(prev => {
+          if (prev) {
+            setInputText(mockVoiceDict[lang] || mockVoiceDict['en']);
+            Voice.stop().catch(()=>{});
+            return false;
+          }
+          return prev;
+        });
+      }, 3000);
+
+      await Voice.start(selectedLang);
+    } catch (e) {
+      console.error(e);
       setIsListening(false);
-      setInputText(mockVoiceDict[lang] || mockVoiceDict['en']);
-    }, 2000);
+    }
+  };
+
+  const speakText = (text: string) => {
+    Speech.isSpeakingAsync().then(isSpeaking => {
+      if (isSpeaking) {
+        Speech.stop();
+      } else {
+        const localeMap: any = { en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', pa: 'pa-IN', hr: 'hi-IN' };
+        Speech.speak(text.replace(/[#*]/g, ''), { language: localeMap[lang] || 'en-IN' });
+      }
+    });
   };
 
   // 🆕 Tapping camera opens tip modal first
@@ -371,7 +460,30 @@ export default function ChatBot() {
 
     try {
       // 🌍 Fully translated prompt — every word in the farmer's chosen language
-      const promptText = (cropScanPrompt[lang] || cropScanPrompt['en'])(instruction);
+      let promptText = (cropScanPrompt[lang] || cropScanPrompt['en'])(instruction);
+
+      // --- PESTICIDE SAFETY LOCK ---
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+          const lat = location.coords.latitude;
+          const lon = location.coords.longitude;
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max&timezone=auto`;
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data && data.daily && data.daily.precipitation_probability_max) {
+             const todayRain = data.daily.precipitation_probability_max[0];
+             const tomorrowRain = data.daily.precipitation_probability_max[1];
+             if (todayRain > 60 || tomorrowRain > 60) {
+                promptText += `\n\n[WEATHER WARNING]: There is a high probability of rain today (${todayRain}%) or tomorrow (${tomorrowRain}%). STRICTLY advise the farmer NOT to spray liquid pesticides or fertilizers right now, as they will wash away. Suggest alternative manual/systemic treatments or wait until rain stops.`;
+             }
+          }
+        }
+      } catch (locErr) {
+         console.log("Could not get location for safety lock", locErr);
+      }
+      // ----------------------------
 
       const op = post({ apiName: 'farmsutraApi', path: '/chat', options: { body: { prompt: promptText, image: img } } });
       const { body } = await op.response;
@@ -437,7 +549,12 @@ export default function ChatBot() {
               ) : msg.sender === 'user' ? (
                 <Text style={styles.userText}>{msg.text}</Text>
               ) : (
-                <Markdown style={markdownStyles}>{msg.text || ''}</Markdown>
+                <View>
+                  <Markdown style={markdownStyles}>{msg.text || ''}</Markdown>
+                  <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 5 }} onPress={() => speakText(msg.text || '')}>
+                    <Ionicons name="volume-medium" size={20} color="#2E7D32" />
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           ))}
@@ -519,7 +636,7 @@ export default function ChatBot() {
 
 const paddingTopOS = Platform.OS === 'ios' ? 50 : RNStatusBar.currentHeight || 0;
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#1E3F20', paddingTop: paddingTopOS },
+  safeArea: { flex: 1, backgroundColor: '#1E3F20', paddingTop: 0 },
   container: { flex: 1, backgroundColor: '#F9F9F9' },
   offlineBanner: { backgroundColor: '#FF9800', padding: 5, alignItems: 'center' },
   offlineText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },

@@ -18,7 +18,7 @@ export default function DashboardLayout({ children, activeRoute }: DashboardLayo
                 <View className="hidden md:flex w-64 bg-agri-dark flex-col justify-between shadow-floating z-10 h-full">
                     <View className="p-6">
                         <View className="flex-row items-center mb-10">
-                            <Ionicons name="leaf" size={28} color="#10B981" />
+                            <Ionicons name="leaf" size={28} color="#1D9E75" />
                             <Text className="text-white font-bold text-2xl ml-3 tracking-wide">Farm Sutra</Text>
                         </View>
 
@@ -50,14 +50,14 @@ export default function DashboardLayout({ children, activeRoute }: DashboardLayo
                         </View>
                     </View>
 
-                    <View className="p-6 border-t border-emerald-800">
+                    <View className="p-6 border-t border-white/10">
                         <View className="flex-row items-center">
                             <View className="w-10 h-10 bg-agri-primary rounded-full items-center justify-center">
                                 <Text className="text-white font-bold text-lg">PJ</Text>
                             </View>
                             <View className="ml-3">
                                 <Text className="text-white font-semibold">Prakshal</Text>
-                                <Text className="text-emerald-300 text-xs">Team Aorta</Text>
+                                <Text className="text-agri-accent text-xs">Team Aorta</Text>
                             </View>
                         </View>
                     </View>
@@ -65,25 +65,25 @@ export default function DashboardLayout({ children, activeRoute }: DashboardLayo
             )}
 
             {/* Main Content Area */}
-            <View className="flex-1 flex-col h-full">
+            <View className="flex-1 flex-col h-full" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 0 }}>
                 {/* Top Header - Contextual Actions */}
-                <View className="h-20 bg-agri-surface flex-row items-center justify-between px-6 shadow-sm z-0 border-b border-gray-100">
+                <View className="h-16 bg-agri-surface flex-row items-center justify-between px-4 shadow-sm z-0 border-b border-gray-100">
                     <TouchableOpacity className="md:hidden">
-                        <Ionicons name="menu" size={28} color="#064E3B" />
+                        <Ionicons name="menu" size={28} color="#2E1B12" />
                     </TouchableOpacity>
 
                     <View className="flex-1 items-end">
-                        <View className="flex-row items-center bg-agri-light px-4 py-2 rounded-full border border-emerald-200">
-                            <Ionicons name="shield-checkmark" size={16} color="#10B981" />
+                        <View className="flex-row items-center bg-agri-light px-4 py-2 rounded-full border border-agri-primary/30">
+                            <Ionicons name="shield-checkmark" size={16} color="#1D9E75" />
                             <Text className="text-agri-dark font-bold ml-2">Trust Score: Verified</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Dynamic Page Injection */}
-                <ScrollView className="flex-1 p-4 md:p-8" showsVerticalScrollIndicator={false}>
+                <View className="flex-1 md:p-4">
                     {children}
-                </ScrollView>
+                </View>
             </View>
         </View>
     );
@@ -92,11 +92,11 @@ export default function DashboardLayout({ children, activeRoute }: DashboardLayo
 const SidebarItem = ({ icon, label, isActive, onPress }: { icon: any, label: string, isActive: boolean, onPress: () => void }) => (
     <TouchableOpacity
         onPress={onPress}
-        className={`flex-row items-center px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-agri-primary shadow-md' : 'hover:bg-emerald-800/50'
+        className={`flex-row items-center px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-agri-primary shadow-md' : 'hover:bg-white/10'
             }`}
     >
-        <Ionicons name={icon} size={22} color={isActive ? '#FFFFFF' : '#A7F3D0'} />
-        <Text className={`ml-4 text-sm font-bold ${isActive ? 'text-white' : 'text-emerald-100'}`}>
+        <Ionicons name={icon} size={22} color={isActive ? '#FFFFFF' : '#C9B49B'} />
+        <Text className={`ml-4 text-sm font-bold ${isActive ? 'text-white' : 'text-[#F5EBD8]'}`}>
             {label}
         </Text>
     </TouchableOpacity>

@@ -10,16 +10,17 @@ module.exports = {
     extend: {
       colors: {
         agri: {
-          primary: '#4A7240', // Warm Moss (Lighter, organic earthy green)
-          dark: '#2C332A',    // Charcoal Olive (Softer anchor for headers and text)
-          bg: '#F7F7F3',      // Almond Oat (Warm, bright minimalist background)
-          surface: '#FFFFFF', // Pure White (For crisp card elevation)
-          accent: '#D05A22',  // Soft Terracotta (Highly visible but softer than pure orange)
+          primary: '#1D9E75', // Teal — the one accent, reserved for primary actions & verification
+          dark: '#2E1B12',    // Deep terracotta-brown (headers, sidebar, nav bands)
+          bg: '#F5EBD8',      // Straw light (screen body background)
+          surface: '#FFFFFF', // Pure White (card elevation)
+          light: '#FBF6EC',   // Muted cream (subtle badges/pills on light surfaces)
+          accent: '#D9A521',  // Gold — secondary highlight, used sparingly (ratings, small callouts)
         },
         alert: {
-          warning: '#F59E0B',
-          danger: '#EF4444',
-          info: '#3B82F6',
+          warning: '#D97706',
+          danger: '#DC2626',
+          info: '#1D9E75',
         }
       },
       fontFamily: {

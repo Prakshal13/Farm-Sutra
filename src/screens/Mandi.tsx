@@ -2,14 +2,16 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Platform, StatusBar as RNStatusBar, Modal, TextInput,
-  Linking, Alert, ActivityIndicator
+  Linking, Alert, ActivityIndicator, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { LanguageContext } from '../context/LanguageContext';
 import { addActivityPoints, ACTIVITIES } from './CreditScore';
+import { COLORS, RADIUS } from '../theme';
 
 // ─────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -17,6 +19,8 @@ import { addActivityPoints, ACTIVITIES } from './CreditScore';
 const STORAGE_KEY = 'mandi_sell_orders';
 const EXPIRY_DAYS = 15;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const UNITS = ['Quintal', 'Tonne', 'Kg'] as const;
+type Unit = typeof UNITS[number];
 
 // ─────────────────────────────────────────────────────────
 //  TYPES
@@ -27,6 +31,8 @@ interface SellOrder {
   crop: string;
   qty: string;
   price: string;
+  soldPrice?: string;
+  photoUri?: string;
   rating: string;
   verified: boolean;
   phone: string;
@@ -66,7 +72,7 @@ const T: any = {
     crop: 'Crop', qty: 'Qty', price: 'Price',
     addBtn: '+ Add Crop', cancel: 'Cancel', submit: 'Submit',
     enterCrop: 'Crop Name (e.g. Wheat)',
-    enterQty: 'Quantity (e.g. 50 Qtl)',
+    enterQty: 'Quantity (e.g. 50)',
     enterPrice: 'Price (e.g. ₹2200/q)',
     enterPhone: 'Your Mobile Number',
     markSold: '✅ Mark as Sold',
@@ -80,6 +86,14 @@ const T: any = {
     advice: 'AI Advice: Based on live weather, soil moisture evaporation is normal. (Saves 30% Water)',
     traders: { ramesh: 'Ramesh Traders', kisaan: 'Kisaan Agro Ltd', suresh: 'Suresh Kumar', farmUser: 'Farm Sutra User' },
     crops: { wheat: 'Wheat', potato: 'Potato' },
+    soldModalTitle: 'Confirm sale price',
+    soldPricePlaceholder: 'Final price you got (₹/unit)',
+    confirmSaleBtn: 'Confirm Sale',
+    relistBtn: 'Relist Crop',
+    photoAdd: '+ Add Photo',
+    photoChange: 'Change Photo',
+    missingSoldPrice: 'Please enter the price you sold at.',
+    soldAtLabel: 'Sold at',
   },
   hi: {
     title: '🛒 फार्म सूत्र मंडी',
@@ -88,7 +102,7 @@ const T: any = {
     crop: 'फसल', qty: 'मात्रा', price: 'भाव',
     addBtn: '+ अपनी फसल बेचें', cancel: 'रद्द करें', submit: 'जोड़ें',
     enterCrop: 'फसल का नाम (जैसे: गेहूं)',
-    enterQty: 'मात्रा (जैसे: 50 क्विंटल)',
+    enterQty: 'मात्रा (जैसे: 50)',
     enterPrice: 'भाव (जैसे: ₹2200/q)',
     enterPhone: 'आपका 10-अंकों का मोबाइल नंबर',
     markSold: '✅ बिक गई - मार्क करें',
@@ -102,6 +116,14 @@ const T: any = {
     advice: 'AI सलाह: मौसम के अनुसार, आज फसल में आवश्यकता अनुसार ही पानी दें।',
     traders: { ramesh: 'रमेश ट्रेडर्स', kisaan: 'किसान एग्रो लिमिटेड', suresh: 'सुरेश कुमार', farmUser: 'फार्म सूत्र किसान' },
     crops: { wheat: 'गेहूं', potato: 'आलू' },
+    soldModalTitle: 'बिक्री मूल्य दर्ज करें',
+    soldPricePlaceholder: 'जो भाव मिला वो लिखें (₹/यूनिट)',
+    confirmSaleBtn: 'बिक्री पक्की करें',
+    relistBtn: 'फिर से लिस्ट करें',
+    photoAdd: '+ फोटो जोड़ें',
+    photoChange: 'फोटो बदलें',
+    missingSoldPrice: 'कृपया बिक्री भाव दर्ज करें।',
+    soldAtLabel: 'बिका भाव',
   },
   ta: {
     title: '🛒 பார்ம் சூத்திரா மண்டி',
@@ -110,7 +132,7 @@ const T: any = {
     crop: 'பயிர்', qty: 'அளவு', price: 'விலை',
     addBtn: '+ பயிரை சேர்க்க', cancel: 'ரத்து செய்', submit: 'சமர்ப்பி',
     enterCrop: 'பயிர் பெயர் (உ-ம்: கோதுமை)',
-    enterQty: 'அளவு (உ-ம்: 50 Qtl)',
+    enterQty: 'அளவு (உ-ம்: 50)',
     enterPrice: 'விலை (உ-ம்: ₹2000)',
     enterPhone: 'மொபைல் எண்',
     markSold: '✅ விற்பனையானது',
@@ -124,6 +146,14 @@ const T: any = {
     advice: 'AI ஆலோசனை: நேரடி வானிலை அடிப்படையில், நீர் ஆவியாதல் இயல்பானது. (30% நீர் சேமிப்பு)',
     traders: { ramesh: 'ரமேஷ் வர்த்தகர்கள்', kisaan: 'கிசான் அக்ரோ லிமிடெட்', suresh: 'சுரேஷ் குமார்', farmUser: 'பார்ம் சூத்திரா விவசாயி' },
     crops: { wheat: 'கோதுமை', potato: 'உருளைக்கிழங்கு' },
+    soldModalTitle: 'விற்பனை விலையை உறுதிப்படுத்தவும்',
+    soldPricePlaceholder: 'கிடைத்த இறுதி விலை (₹/யூனிட்)',
+    confirmSaleBtn: 'விற்பனையை உறுதி செய்',
+    relistBtn: 'மீண்டும் பட்டியலிடு',
+    photoAdd: '+ புகைப்படம் சேர்',
+    photoChange: 'புகைப்படத்தை மாற்று',
+    missingSoldPrice: 'விற்ற விலையை உள்ளிடவும்.',
+    soldAtLabel: 'விற்ற விலை',
   },
   pa: {
     title: '🛒 ਫਾਰਮ ਸੂਤਰ ਮੰਡੀ',
@@ -132,7 +162,7 @@ const T: any = {
     crop: 'ਫਸਲ', qty: 'ਮਾਤਰਾ', price: 'ਭਾਅ',
     addBtn: '+ ਆਪਣੀ ਫਸਲ ਵੇਚੋ', cancel: 'ਰੱਦ ਕਰੋ', submit: 'ਜੋੜੋ',
     enterCrop: 'ਫਸਲ ਦਾ ਨਾਮ (ਜਿਵੇਂ: ਕਣਕ)',
-    enterQty: 'ਮਾਤਰਾ (ਜਿਵੇਂ: 50 ਕੁਇੰਟਲ)',
+    enterQty: 'ਮਾਤਰਾ (ਜਿਵੇਂ: 50)',
     enterPrice: 'ਭਾਅ (ਜਿਵੇਂ: ₹2200/q)',
     enterPhone: 'ਆਪਣਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ',
     markSold: '✅ ਵਿਕ ਗਈ - ਮਾਰਕ ਕਰੋ',
@@ -146,6 +176,14 @@ const T: any = {
     advice: 'AI ਸਲਾਹ: ਲਾਈਵ ਮੌਸਮ ਦੇ ਅਨੁਸਾਰ, ਫਸਲ ਨੂੰ ਲੋੜ ਅਨੁਸਾਰ ਪਾਣੀ ਦਿਓ।',
     traders: { ramesh: 'ਰਮੇਸ਼ ਟਰੇਡਰਜ਼', kisaan: 'ਕਿਸਾਨ ਐਗਰੋ ਲਿਮਟਿਡ', suresh: 'ਸੁਰੇਸ਼ ਕੁਮਾਰ', farmUser: 'ਫਾਰਮ ਸੂਤਰ ਕਿਸਾਨ' },
     crops: { wheat: 'ਕਣਕ', potato: 'ਆਲੂ' },
+    soldModalTitle: 'ਵਿਕਰੀ ਭਾਅ ਦਰਜ ਕਰੋ',
+    soldPricePlaceholder: 'ਮਿਲਿਆ ਅੰਤਿਮ ਭਾਅ (₹/ਯੂਨਿਟ)',
+    confirmSaleBtn: 'ਵਿਕਰੀ ਪੱਕੀ ਕਰੋ',
+    relistBtn: 'ਦੁਬਾਰਾ ਲਿਸਟ ਕਰੋ',
+    photoAdd: '+ ਫੋਟੋ ਜੋੜੋ',
+    photoChange: 'ਫੋਟੋ ਬਦਲੋ',
+    missingSoldPrice: 'ਕਿਰਪਾ ਕਰਕੇ ਵਿਕਰੀ ਭਾਅ ਦਰਜ ਕਰੋ।',
+    soldAtLabel: 'ਵਿਕਿਆ ਭਾਅ',
   },
   hr: {
     title: '🛒 फार्म सूत्र मंडी',
@@ -154,7 +192,7 @@ const T: any = {
     crop: 'फसल', qty: 'मात्रा', price: 'भाव',
     addBtn: '+ फसल बेचो', cancel: 'काट दो', submit: 'जोड़ दो',
     enterCrop: 'फसल का नाम (ज्यूकर: गेहूं)',
-    enterQty: 'मात्रा (ज्यूकर: 50 क्विंटल)',
+    enterQty: 'मात्रा (ज्यूकर: 50)',
     enterPrice: 'भाव (ज्यूकर: ₹2200/q)',
     enterPhone: 'थारा मोबाइल नंबर',
     markSold: '✅ बिकगी - मार्क करो',
@@ -168,6 +206,14 @@ const T: any = {
     advice: 'AI सलाह: मौसम के हिसाब तै आज खेत में ठीक-ठाक पाणी ला दियो।',
     traders: { ramesh: 'रमेश ट्रेडर्स', kisaan: 'किसान एग्रो लिमिटेड', suresh: 'सुरेश कुमार', farmUser: 'फार्म सूत्र किसान' },
     crops: { wheat: 'गेहूं', potato: 'आलू' },
+    soldModalTitle: 'बिक्री का भाव लिखो',
+    soldPricePlaceholder: 'जो भाव मिल्या वो लिखो (₹/यूनिट)',
+    confirmSaleBtn: 'बिक्री पक्की करो',
+    relistBtn: 'फेर तै लिस्ट करो',
+    photoAdd: '+ फोटो जोड़ो',
+    photoChange: 'फोटो बदलो',
+    missingSoldPrice: 'कृपया बिक्री भाव लिखो।',
+    soldAtLabel: 'बिक्या भाव',
   },
 };
 
@@ -203,12 +249,18 @@ export default function Mandi() {
   const [sellOrders, setSellOrders] = useState<SellOrder[]>([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [newCrop, setNewCrop] = useState('');
-  const [newQty, setNewQty] = useState('');
+  const [newQtyNum, setNewQtyNum] = useState('');
+  const [newUnit, setNewUnit] = useState<Unit>('Quintal');
   const [newPrice, setNewPrice] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newPhotoUri, setNewPhotoUri] = useState<string | null>(null);
   const [liveLocation, setLiveLocation] = useState('Fetching GPS...');
   const [liveTemp, setLiveTemp] = useState('--°C');
   const [isWeatherLoading, setIsWeatherLoading] = useState(true);
+
+  const [isSoldModalVisible, setSoldModalVisible] = useState(false);
+  const [soldOrderId, setSoldOrderId] = useState<string | null>(null);
+  const [soldPriceInput, setSoldPriceInput] = useState('');
 
   const loadOrders = useCallback(async () => {
     try {
@@ -290,20 +342,38 @@ export default function Mandi() {
     } catch (e) { console.log('Save error:', e); }
   };
 
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Photo access is needed to add a crop photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.5,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setNewPhotoUri(result.assets[0].uri);
+    }
+  };
+
   const addNewItem = async () => {
-    if (!newCrop.trim() || !newQty.trim() || !newPrice.trim() || !newPhone.trim()) {
+    if (!newCrop.trim() || !newQtyNum.trim() || !newPrice.trim() || !newPhone.trim()) {
       Alert.alert('⚠️', t.incompleteDetails);
       return;
     }
 
     const now = Date.now();
     const cropName = newCrop.trim();
+    const qtyCombined = `${newQtyNum.trim()} ${newUnit}`;
 
     const newOrder: SellOrder = {
       id: now.toString(),
       nameKey: 'farmUser',
       crop: cropName,
-      qty: newQty.trim(),
+      qty: qtyCombined,
       price: newPrice.trim(),
       rating: 'New',
       verified: true,
@@ -312,6 +382,7 @@ export default function Mandi() {
       expiresAt: now + (EXPIRY_DAYS * MS_PER_DAY),
       status: 'ACTIVE',
       buyerContacted: false,
+      photoUri: newPhotoUri || undefined,
     };
 
     const updated = [newOrder, ...sellOrders];
@@ -319,7 +390,8 @@ export default function Mandi() {
     await saveOrders(updated);
 
     setModalVisible(false);
-    setNewCrop(''); setNewQty(''); setNewPrice(''); setNewPhone('');
+    setNewCrop(''); setNewQtyNum(''); setNewUnit('Quintal');
+    setNewPrice(''); setNewPhone(''); setNewPhotoUri(null);
 
     const listedToday = await alreadyListedCropToday(cropName);
 
@@ -336,13 +408,38 @@ export default function Mandi() {
     }
   };
 
-  const markAsSold = async (orderId: string) => {
+  const openSoldModal = (orderId: string, listedPrice: string) => {
+    setSoldOrderId(orderId);
+    setSoldPriceInput(listedPrice);
+    setSoldModalVisible(true);
+  };
+
+  const confirmSale = async () => {
+    if (!soldPriceInput.trim()) {
+      Alert.alert('⚠️', t.missingSoldPrice);
+      return;
+    }
     const updated = sellOrders.map(o =>
-      o.id === orderId ? { ...o, status: 'SOLD' as const } : o
+      o.id === soldOrderId ? { ...o, status: 'SOLD' as const, soldPrice: soldPriceInput.trim() } : o
     );
     setSellOrders(updated);
     await saveOrders(updated);
+
+    setSoldModalVisible(false);
+    setSoldOrderId(null);
+    setSoldPriceInput('');
     await addActivityPoints(ACTIVITIES.MANDI_SOLD, lang);
+  };
+
+  const relistOrder = async (orderId: string) => {
+    const now = Date.now();
+    const updated = sellOrders.map(o =>
+      o.id === orderId
+        ? { ...o, status: 'ACTIVE' as const, createdAt: now, expiresAt: now + (EXPIRY_DAYS * MS_PER_DAY), buyerContacted: false }
+        : o
+    );
+    setSellOrders(updated);
+    await saveOrders(updated);
   };
 
   const openWhatsApp = async (
@@ -382,7 +479,7 @@ export default function Mandi() {
     const isSold = item.status === 'SOLD';
     const isExpired = item.status === 'EXPIRED';
 
-    const countdownColor = days <= 1 ? '#DC2626' : days <= 5 ? '#D05A22' : '#737A71';
+    const countdownColor = days <= 1 ? COLORS.danger : days <= 5 ? COLORS.warning : COLORS.textMuted;
 
     return (
       <View style={[
@@ -392,8 +489,15 @@ export default function Mandi() {
       ]}>
         <View style={styles.cardHeader}>
           <View style={styles.nameRow}>
-            <Text style={styles.nameText}>{displayName}</Text>
-            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#0284C7" style={styles.verifyIcon} />}
+            {item.photoUri && (
+              <Image source={{ uri: item.photoUri }} style={styles.thumb} />
+            )}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.nameText}>{displayName}</Text>
+                {item.verified && <Ionicons name="checkmark-circle" size={16} color={COLORS.accent} style={styles.verifyIcon} />}
+              </View>
+            </View>
           </View>
           <View style={styles.rightHeader}>
             {isSold ? (
@@ -406,7 +510,7 @@ export default function Mandi() {
               </View>
             ) : (
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={13} color="#D05A22" />
+                <Ionicons name="star" size={13} color={COLORS.gold} />
                 <Text style={styles.ratingText}>{item.rating}</Text>
               </View>
             )}
@@ -417,6 +521,9 @@ export default function Mandi() {
           <Text style={styles.cropText}>🌾 {t.crop}: {item.crop}</Text>
           <Text style={styles.detailText}>📦 {t.qty}: {item.qty}</Text>
           <Text style={styles.priceText}>💰 {t.price}: {item.price}</Text>
+          {isSold && item.soldPrice && (
+            <Text style={styles.soldPriceText}>✅ {t.soldAtLabel}: {item.soldPrice}</Text>
+          )}
         </View>
 
         {!isSold && !isExpired && (
@@ -447,11 +554,18 @@ export default function Mandi() {
 
             <TouchableOpacity
               style={styles.soldBtn}
-              onPress={() => markAsSold(item.id)}
+              onPress={() => openSoldModal(item.id, item.price)}
             >
               <Text style={styles.soldBtnText}>{t.markSold}</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {isExpired && (
+          <TouchableOpacity style={styles.relistBtn} onPress={() => relistOrder(item.id)}>
+            <Ionicons name="refresh" size={16} color={COLORS.accentDark} style={{ marginRight: 6 }} />
+            <Text style={styles.relistBtnText}>{t.relistBtn}</Text>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -466,10 +580,10 @@ export default function Mandi() {
         <View style={styles.cardHeader}>
           <View style={styles.nameRow}>
             <Text style={styles.nameText}>{displayName}</Text>
-            {item.verified && <Ionicons name="checkmark-circle" size={16} color="#0284C7" style={styles.verifyIcon} />}
+            {item.verified && <Ionicons name="checkmark-circle" size={16} color={COLORS.accent} style={styles.verifyIcon} />}
           </View>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={13} color="#D05A22" />
+            <Ionicons name="star" size={13} color={COLORS.gold} />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
         </View>
@@ -499,14 +613,14 @@ export default function Mandi() {
         <View style={styles.weatherRow}>
           <View>
             <Text style={styles.weatherLoc}>
-              <Ionicons name="location" size={14} color="#FFF" /> {liveLocation}
+              <Ionicons name="location" size={14} color={COLORS.textOnDark} /> {liveLocation}
             </Text>
             {isWeatherLoading
-              ? <ActivityIndicator size="small" color="#FFF" style={{ marginTop: 5, alignSelf: 'flex-start' }} />
+              ? <ActivityIndicator size="small" color={COLORS.textOnDark} style={{ marginTop: 5, alignSelf: 'flex-start' }} />
               : <Text style={styles.weatherTemp}>{liveTemp} | Live</Text>
             }
           </View>
-          <Ionicons name="partly-sunny" size={40} color="#FBBF24" />
+          <Ionicons name="partly-sunny" size={40} color={COLORS.gold} />
         </View>
         <View style={styles.adviceBox}>
           <Text style={styles.adviceText}>{t.advice}</Text>
@@ -563,34 +677,64 @@ export default function Mandi() {
 
             <TextInput
               style={styles.input}
-              placeholderTextColor="#737A71"
+              placeholderTextColor={COLORS.textMuted}
               placeholder={t.enterCrop}
               value={newCrop}
               onChangeText={setNewCrop}
             />
+
+            <View style={styles.qtyRow}>
+              <TextInput
+                style={[styles.input, styles.qtyInput]}
+                placeholderTextColor={COLORS.textMuted}
+                placeholder={t.enterQty}
+                value={newQtyNum}
+                onChangeText={setNewQtyNum}
+                keyboardType="numeric"
+              />
+              <View style={styles.unitRow}>
+                {UNITS.map(unit => (
+                  <TouchableOpacity
+                    key={unit}
+                    style={[styles.unitChip, newUnit === unit && styles.unitChipActive]}
+                    onPress={() => setNewUnit(unit)}
+                  >
+                    <Text style={[styles.unitChipText, newUnit === unit && styles.unitChipTextActive]}>
+                      {unit}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             <TextInput
               style={styles.input}
-              placeholderTextColor="#737A71"
-              placeholder={t.enterQty}
-              value={newQty}
-              onChangeText={setNewQty}
-            />
-            <TextInput
-              style={styles.input}
-              placeholderTextColor="#737A71"
+              placeholderTextColor={COLORS.textMuted}
               placeholder={t.enterPrice}
               value={newPrice}
               onChangeText={setNewPrice}
             />
             <TextInput
               style={styles.input}
-              placeholderTextColor="#737A71"
+              placeholderTextColor={COLORS.textMuted}
               placeholder={t.enterPhone}
               value={newPhone}
               onChangeText={setNewPhone}
               keyboardType="phone-pad"
               maxLength={10}
             />
+
+            {newPhotoUri ? (
+              <TouchableOpacity style={styles.photoPreviewWrap} onPress={pickPhoto}>
+                <Image source={{ uri: newPhotoUri }} style={styles.photoPreviewImg} />
+                <Text style={styles.changePhotoText}>{t.photoChange}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.photoPickerBtn} onPress={pickPhoto}>
+                <Ionicons name="camera-outline" size={18} color={COLORS.textSecondary} style={{ marginRight: 6 }} />
+                <Text style={styles.photoPickerText}>{t.photoAdd}</Text>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
@@ -604,90 +748,123 @@ export default function Mandi() {
         </View>
       </Modal>
 
+      <Modal visible={isSoldModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t.soldModalTitle}</Text>
+            <TextInput
+              style={styles.input}
+              placeholderTextColor={COLORS.textMuted}
+              placeholder={t.soldPricePlaceholder}
+              value={soldPriceInput}
+              onChangeText={setSoldPriceInput}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setSoldModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.submitBtn} onPress={confirmSale}>
+                <Text style={styles.submitBtnText}>{t.confirmSaleBtn}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────
-//  STYLES: Lighter "Warm Minimalism" (Warm Moss & Almond)
+//  STYLES — Theme F "Sunrise Contrast"
 // ─────────────────────────────────────────────────────────
 const paddingTopOS = Platform.OS === 'ios' ? 50 : RNStatusBar.currentHeight || 0;
 
 const styles = StyleSheet.create({
-  // APP BACKGROUND: Almond Oat (Warm, bright, glare-free)
-  safeArea: { flex: 1, backgroundColor: '#F7F7F3', paddingTop: paddingTopOS },
+  safeArea: { flex: 1, backgroundColor: COLORS.bgLight, paddingTop: 0 },
 
-  // HEADER: Charcoal Olive (Softer anchor, highly readable)
-  header: { backgroundColor: '#2C332A', paddingVertical: 15, alignItems: 'center' },
-  headerTitle: { color: '#F7F7F3', fontSize: 20, fontWeight: 'bold', letterSpacing: 0.5 },
+  header: { backgroundColor: COLORS.bgDark, paddingVertical: 15, alignItems: 'center' },
+  headerTitle: { color: COLORS.textOnDark, fontSize: 20, fontWeight: 'bold', letterSpacing: 0.5 },
 
-  // WEATHER CARD: Warm Moss (Organic earthy green)
-  weatherCard: { backgroundColor: '#4A7240', margin: 10, borderRadius: 16, padding: 18, elevation: 2 },
+  weatherCard: { backgroundColor: COLORS.accent, margin: 10, marginTop: -8, borderRadius: RADIUS.lg, padding: 18, elevation: 2 },
   weatherRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  weatherLoc: { color: '#EAF0E9', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  weatherLoc: { color: COLORS.textOnDark, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   weatherTemp: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', marginTop: 4 },
-  adviceBox: { backgroundColor: 'rgba(255,255,255,0.15)', padding: 12, borderRadius: 10, marginTop: 5 },
+  adviceBox: { backgroundColor: 'rgba(255,255,255,0.18)', padding: 12, borderRadius: RADIUS.sm, marginTop: 5 },
   adviceText: { color: '#FFFFFF', fontSize: 13, fontStyle: 'italic', fontWeight: '600' },
 
-  // TOGGLES: Clean white pill with Soft Terracotta active state
-  toggleContainer: { flexDirection: 'row', padding: 8, backgroundColor: '#FFFFFF', marginHorizontal: 10, borderRadius: 12, elevation: 1, marginBottom: 5 },
-  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
-  activeToggle: { backgroundColor: '#D05A22', shadowColor: '#D05A22', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  toggleText: { fontSize: 15, fontWeight: '700', color: '#889384' },
+  toggleContainer: { flexDirection: 'row', padding: 8, backgroundColor: COLORS.surface, marginHorizontal: 10, borderRadius: RADIUS.md, elevation: 1, marginBottom: 5 },
+  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: RADIUS.sm },
+  activeToggle: { backgroundColor: COLORS.accent, shadowColor: COLORS.accent, shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  toggleText: { fontSize: 15, fontWeight: '700', color: COLORS.textSecondary },
   activeToggleText: { color: '#FFFFFF' },
 
-  // CALL TO ACTION: Soft Terracotta
-  addBtn: { backgroundColor: '#D05A22', marginHorizontal: 15, marginTop: 10, marginBottom: 5, padding: 16, borderRadius: 12, alignItems: 'center', elevation: 2 },
+  addBtn: { backgroundColor: COLORS.accent, marginHorizontal: 15, marginTop: 10, marginBottom: 5, padding: 16, borderRadius: RADIUS.md, alignItems: 'center', elevation: 2 },
   addBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
 
-  // CARDS: Pure white surfaces
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
-  soldCard: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB' },
-  expiredCard: { backgroundColor: '#F3F4F6', opacity: 0.7 },
+  card: { backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 18, marginBottom: 15, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
+  soldCard: { backgroundColor: COLORS.surfaceMuted, borderWidth: 1, borderColor: COLORS.border },
+  expiredCard: { backgroundColor: COLORS.surfaceMuted, opacity: 0.7 },
 
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F0F0EE', paddingBottom: 12, marginBottom: 12 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: COLORS.border, paddingBottom: 12, marginBottom: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  nameText: { fontSize: 17, fontWeight: '800', color: '#2C332A' },
+  thumb: { width: 36, height: 36, borderRadius: RADIUS.sm, marginRight: 10, backgroundColor: COLORS.surfaceMuted },
+  nameText: { fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
 
-  // VERIFICATION: Friendly Trust Blue
-  verifyIcon: { marginLeft: 6, color: '#0284C7' },
+  verifyIcon: { marginLeft: 6 },
   rightHeader: { alignItems: 'flex-end' },
 
-  ratingRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7ED', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  ratingText: { marginLeft: 4, fontSize: 12, fontWeight: '800', color: '#D05A22' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.goldSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
+  ratingText: { marginLeft: 4, fontSize: 12, fontWeight: '800', color: COLORS.gold },
 
-  soldBadge: { backgroundColor: '#F0F5F1', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#4A7240' },
-  soldBadgeText: { color: '#4A7240', fontSize: 12, fontWeight: '800' },
-  expiredBadge: { backgroundColor: '#F0F0EE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  expiredBadgeText: { color: '#889384', fontSize: 12, fontWeight: '800' },
+  soldBadge: { backgroundColor: COLORS.accentSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.accent },
+  soldBadgeText: { color: COLORS.accentDark, fontSize: 12, fontWeight: '800' },
+  expiredBadge: { backgroundColor: COLORS.surfaceMuted, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.pill },
+  expiredBadgeText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '800' },
 
   cardBody: { marginBottom: 15 },
-  cropText: { fontSize: 17, fontWeight: '800', color: '#2C332A', marginBottom: 6 },
-  detailText: { fontSize: 15, color: '#5C6658', marginBottom: 6, fontWeight: '500' },
-  priceText: { fontSize: 16, fontWeight: '800', color: '#4A7240' }, // Moss Green for money
+  cropText: { fontSize: 17, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 6 },
+  detailText: { fontSize: 15, color: COLORS.textSecondary, marginBottom: 6, fontWeight: '500' },
+  priceText: { fontSize: 16, fontWeight: '800', color: COLORS.accentDark },
+  soldPriceText: { fontSize: 14, fontWeight: '700', color: COLORS.accentDark, marginTop: 4 },
 
   countdownRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   countdownText: { fontSize: 13, fontWeight: '700', marginLeft: 6 },
-  contactedPill: { marginLeft: 10, backgroundColor: '#F0F9FF', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  contactedPill: { marginLeft: 10, backgroundColor: COLORS.accentSoft, borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 3 },
   contactedPillText: { fontSize: 12 },
 
-  // SECONDARY ACTIONS: Subtle, clean
   actionRow: { flexDirection: 'row', gap: 10 },
-  whatsappBtn: { flex: 1, flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
-  soldBtn: { flex: 1, backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
-  soldBtnText: { color: '#5C6658', fontWeight: '800', fontSize: 14 },
-  whatsappBtnText: { color: '#2C332A', fontWeight: '800', fontSize: 14 },
+  whatsappBtn: { flex: 1, flexDirection: 'row', backgroundColor: COLORS.surface, paddingVertical: 12, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: COLORS.border },
+  soldBtn: { flex: 1, backgroundColor: COLORS.surface, paddingVertical: 12, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: COLORS.border },
+  soldBtnText: { color: COLORS.textSecondary, fontWeight: '800', fontSize: 14 },
+  whatsappBtnText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },
 
-  fullWhatsappBtn: { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#EBECE9' },
+  fullWhatsappBtn: { flexDirection: 'row', backgroundColor: COLORS.surface, paddingVertical: 12, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: COLORS.border },
 
-  // MODALS
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(44, 51, 42, 0.85)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 20, elevation: 10 },
-  modalTitle: { fontSize: 22, fontWeight: '900', color: '#2C332A', marginBottom: 20 },
-  input: { backgroundColor: '#F7F7F3', padding: 15, borderRadius: 12, marginBottom: 12, fontSize: 16, color: '#2C332A', fontWeight: '500', borderWidth: 1, borderColor: '#EBECE9' },
+  relistBtn: { flexDirection: 'row', backgroundColor: COLORS.accentSoft, paddingVertical: 12, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.accent },
+  relistBtnText: { color: COLORS.accentDark, fontWeight: '800', fontSize: 14 },
+
+  qtyRow: { marginBottom: 0 },
+  qtyInput: { marginBottom: 8 },
+  unitRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  unitChip: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surfaceMuted },
+  unitChipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  unitChipText: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary },
+  unitChipTextActive: { color: '#FFFFFF' },
+
+  photoPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.border, borderRadius: RADIUS.sm, paddingVertical: 14, marginBottom: 12 },
+  photoPickerText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
+  photoPreviewWrap: { marginBottom: 12, alignItems: 'center' },
+  photoPreviewImg: { width: '100%', height: 140, borderRadius: RADIUS.sm, marginBottom: 6, backgroundColor: COLORS.surfaceMuted },
+  changePhotoText: { fontSize: 13, fontWeight: '700', color: COLORS.accentDark },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(46, 27, 18, 0.85)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: COLORS.surface, padding: 24, borderRadius: RADIUS.lg + 4, elevation: 10 },
+  modalTitle: { fontSize: 22, fontWeight: '900', color: COLORS.textPrimary, marginBottom: 20 },
+  input: { backgroundColor: COLORS.surfaceMuted, padding: 15, borderRadius: RADIUS.md, marginBottom: 12, fontSize: 16, color: COLORS.textPrimary, fontWeight: '500', borderWidth: 1, borderColor: COLORS.border },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 15 },
   cancelBtn: { padding: 12, marginRight: 15, justifyContent: 'center' },
-  cancelBtnText: { color: '#889384', fontSize: 16, fontWeight: '800' },
-  submitBtn: { backgroundColor: '#D05A22', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, elevation: 2 },
+  cancelBtnText: { color: COLORS.textMuted, fontSize: 16, fontWeight: '800' },
+  submitBtn: { backgroundColor: COLORS.accent, paddingVertical: 12, paddingHorizontal: 24, borderRadius: RADIUS.md, elevation: 2 },
   submitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

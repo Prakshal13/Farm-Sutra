@@ -1,36 +1,37 @@
 import React, { useState, useContext } from 'react';
-import { 
+import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Platform, StatusBar as RNStatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location'; 
+import * as Location from 'expo-location';
 import { LanguageContext } from '../context/LanguageContext';
+import { COLORS, RADIUS } from '../theme';
 
 // 🔥 CREDIT SCORE IMPORT 🔥
 import { addActivityPoints, ACTIVITIES } from './CreditScore';
 
 const weatherUIDict: any = {
-  en: { 
+  en: {
     title: "🌦️ Smart Agri-Weather", cropLabel: "Crop Name (e.g. Wheat)", soilLabel: "Soil Type (e.g. Sandy, Clay)", btn: "Get Smart Forecast", alertTitle: "⚠️ Extreme Weather Alert", pestTitle: "🦠 Pest & Disease Alert", forecastTitle: "7-Day Forecast", fetching: "Fetching Live GPS Weather...",
     days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     conditions: { clear: 'Clear', cloudy: 'Cloudy', rain: 'Rain', lightRain: 'Light Rain' }
   },
-  hi: { 
+  hi: {
     title: "🌦️ स्मार्ट कृषि-मौसम", cropLabel: "फसल का नाम (जैसे: गेहूं)", soilLabel: "मिट्टी का प्रकार (जैसे: बलुई)", btn: "स्मार्ट मौसम देखें", alertTitle: "⚠️ मौसम चेतावनी", pestTitle: "🦠 बीमारी का खतरा", forecastTitle: "7-दिन का मौसम", fetching: "लाइव मौसम ला रहे हैं...",
     days: ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'],
     conditions: { clear: 'साफ', cloudy: 'बादल', rain: 'बारिश', lightRain: 'हल्की बारिश' }
   },
-  ta: { 
+  ta: {
     title: "🌦️ ஸ்மார்ட் வானிலை", cropLabel: "பயிர் பெயர்", soilLabel: "மண் வகை", btn: "முன்னறிவிப்பைப் பெறுங்கள்", alertTitle: "⚠️ வானிலை எச்சரிக்கை", pestTitle: "🦠 பூச்சி எச்சரிக்கை", forecastTitle: "7 நாள் வானிலை", fetching: "வானிலை பெறப்படுகிறது...",
     days: ['ஞாயிறு', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி'],
     conditions: { clear: 'தெளிவு', cloudy: 'மேகம்', rain: 'மழை', lightRain: 'லேசான மழை' }
   },
-  pa: { 
+  pa: {
     title: "🌦️ ਸਮਾਰਟ ਖੇਤੀ-ਮੌਸਮ", cropLabel: "ਫਸਲ ਦਾ ਨਾਮ", soilLabel: "ਮਿੱਟੀ ਦੀ ਕਿਸਮ", btn: "ਸਮਾਰਟ ਮੌਸਮ ਦੇਖੋ", alertTitle: "⚠️ ਮੌਸਮ ਚੇਤਾਵਨੀ", pestTitle: "🦠 ਬਿਮਾਰੀ ਦਾ ਖਤਰਾ", forecastTitle: "7-ਦਿਨ ਦਾ ਮੌਸਮ", fetching: "ਲਾਈਵ ਮੌਸਮ ਲਿਆ ਰਿਹਾ ਹੈ...",
     days: ['ਐਤ', 'ਸੋਮ', 'ਮੰਗਲ', 'ਬੁੱਧ', 'ਵੀਰ', 'ਸ਼ੁੱਕਰ', 'ਸ਼ਨਿੱਚਰ'],
     conditions: { clear: 'ਸਾਫ਼', cloudy: 'ਬੱਦਲ', rain: 'ਮੀਂਹ', lightRain: 'ਹਲਕਾ ਮੀਂਹ' }
   },
-  hr: { 
+  hr: {
     title: "🌦️ स्मार्ट खेती-मौसम", cropLabel: "फसल का नाम", soilLabel: "माटी का प्रकार", btn: "स्मार्ट मौसम देखो", alertTitle: "⚠️ मौसम अलर्ट", pestTitle: "🦠 बीमारी का खतरा", forecastTitle: "7-दिन का मौसम", fetching: "GPS मौसम ल्या रया सै...",
     days: ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'],
     conditions: { clear: 'साफ', cloudy: 'बादल', rain: 'बारिश', lightRain: 'हल्की बारिश' }
@@ -79,14 +80,14 @@ export default function AgriWeather() {
           const wmoCode = data.daily.weathercode[index];
           const rainChance = data.daily.precipitation_probability_max[index] || 0;
           const temp = Math.round(data.daily.temperature_2m_max[index]);
-          
+
           let condKey = 'clear';
           if (wmoCode >= 1 && wmoCode <= 3) condKey = 'cloudy';
           if (wmoCode >= 51 && wmoCode <= 55) condKey = 'lightRain';
           if (wmoCode >= 61) condKey = 'rain';
 
-          const humidity = data.daily.relative_humidity_2m_max 
-            ? Math.round(data.daily.relative_humidity_2m_max[index]) 
+          const humidity = data.daily.relative_humidity_2m_max
+            ? Math.round(data.daily.relative_humidity_2m_max[index])
             : (rainChance > 50 ? 80 + Math.floor(Math.random() * 15) : 40 + Math.floor(Math.random() * 20));
 
           const dayOfWeek = new Date(dateStr).getDay();
@@ -134,11 +135,11 @@ export default function AgriWeather() {
       </View>
 
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-        
+
         {extremeAlert && (
           <View style={styles.alertBox}>
-            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
-              <Ionicons name="warning" size={20} color="#DC2626" style={{marginRight: 8}}/>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+              <Ionicons name="warning" size={20} color={COLORS.danger} style={{ marginRight: 8 }} />
               <Text style={styles.alertTitle}>{t.alertTitle}</Text>
             </View>
             <Text style={styles.alertText}>{extremeAlert}</Text>
@@ -147,8 +148,8 @@ export default function AgriWeather() {
 
         {pestAlert && (
           <View style={styles.pestBox}>
-            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
-              <Ionicons name="bug" size={20} color="#D97706" style={{marginRight: 8}}/>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+              <Ionicons name="bug" size={20} color={COLORS.warning} style={{ marginRight: 8 }} />
               <Text style={styles.pestTitle}>{t.pestTitle}</Text>
             </View>
             <Text style={styles.pestText}>{pestAlert}</Text>
@@ -157,27 +158,27 @@ export default function AgriWeather() {
 
         <View style={styles.card}>
           <Text style={styles.label}>{t.cropLabel}</Text>
-          <TextInput 
+          <TextInput
             style={styles.input}
-            placeholderTextColor="#888"
+            placeholderTextColor={COLORS.textMuted}
             placeholder={lang === 'en' ? "e.g. Wheat" : "जैसे: गेहूं"}
             value={cropData.cropName}
-            onChangeText={(text) => setCropData({...cropData, cropName: text})}
+            onChangeText={(text) => setCropData({ ...cropData, cropName: text })}
           />
 
           <Text style={styles.label}>{t.soilLabel}</Text>
-          <TextInput 
+          <TextInput
             style={styles.input}
-            placeholderTextColor="#888"
+            placeholderTextColor={COLORS.textMuted}
             placeholder={lang === 'en' ? "e.g. Sandy" : "जैसे: बलुई"}
             value={cropData.soilType}
-            onChangeText={(text) => setCropData({...cropData, soilType: text})}
+            onChangeText={(text) => setCropData({ ...cropData, soilType: text })}
           />
 
           <TouchableOpacity style={styles.button} onPress={fetchSmartWeather} disabled={loading}>
             {loading ? (
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <ActivityIndicator color="#fff" style={{marginRight: 10}} />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" style={{ marginRight: 10 }} />
                 <Text style={styles.buttonText}>{t.fetching}</Text>
               </View>
             ) : (
@@ -193,8 +194,8 @@ export default function AgriWeather() {
               <View key={index} style={styles.weatherRow}>
                 <Text style={styles.dayText}>{t.days[item.dayKey]}</Text>
                 <View style={styles.weatherDetails}>
-                  <Text style={styles.weatherText}><Ionicons name="thermometer-outline" size={14}/> {item.temp}°C</Text>
-                  <Text style={styles.weatherText}><Ionicons name="water-outline" size={14} color="#3B82F6"/> {item.humidity}%</Text>
+                  <Text style={styles.weatherText}><Ionicons name="thermometer-outline" size={14} color={COLORS.textSecondary} /> {item.temp}°C</Text>
+                  <Text style={styles.weatherText}><Ionicons name="water-outline" size={14} color={COLORS.accent} /> {item.humidity}%</Text>
                   <Text style={[styles.weatherText, { width: 70 }]} numberOfLines={1}>
                     {t.conditions[item.conditionKey]}
                   </Text>
@@ -210,24 +211,24 @@ export default function AgriWeather() {
 
 const paddingTopOS = Platform.OS === 'ios' ? 50 : RNStatusBar.currentHeight || 0;
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F0F4F1', paddingTop: paddingTopOS },
-  header: { backgroundColor: '#1E3F20', paddingVertical: 15, alignItems: 'center' },
-  headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  safeArea: { flex: 1, backgroundColor: COLORS.bgLight, paddingTop: 0 },
+  header: { backgroundColor: COLORS.bgDark, paddingVertical: 15, alignItems: 'center' },
+  headerTitle: { color: COLORS.textOnDark, fontSize: 20, fontWeight: 'bold' },
   container: { flex: 1, padding: 15 },
-  card: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 12, marginBottom: 15, elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E3F20', marginBottom: 15 },
-  label: { fontSize: 14, fontWeight: 'bold', color: '#4CAF50', marginBottom: 5, marginTop: 10 },
-  input: { backgroundColor: '#F9F9F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#333' },
-  button: { backgroundColor: '#2E7D32', padding: 14, borderRadius: 8, marginTop: 20, alignItems: 'center', elevation: 2, flexDirection: 'row', justifyContent: 'center' },
+  card: { backgroundColor: COLORS.surface, padding: 20, borderRadius: RADIUS.lg, marginBottom: 15, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 15 },
+  label: { fontSize: 14, fontWeight: 'bold', color: COLORS.textSecondary, marginBottom: 5, marginTop: 10 },
+  input: { backgroundColor: COLORS.surfaceMuted, borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.sm, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: COLORS.textPrimary },
+  button: { backgroundColor: COLORS.accent, padding: 14, borderRadius: RADIUS.sm, marginTop: 20, alignItems: 'center', elevation: 2, flexDirection: 'row', justifyContent: 'center' },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  alertBox: { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#F87171', padding: 15, marginBottom: 15, borderRadius: 8 },
-  alertTitle: { fontWeight: 'bold', color: '#B91C1C', fontSize: 16 },
-  alertText: { color: '#991B1B', fontSize: 14, marginTop: 4 },
-  pestBox: { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FBBF24', padding: 15, marginBottom: 15, borderRadius: 8 },
-  pestTitle: { fontWeight: 'bold', color: '#B45309', fontSize: 16 },
-  pestText: { color: '#92400E', fontSize: 14, marginTop: 4 },
-  weatherRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  dayText: { fontWeight: 'bold', fontSize: 16, color: '#333', flex: 1 },
+  alertBox: { backgroundColor: COLORS.dangerSoft, borderWidth: 1, borderColor: COLORS.danger, padding: 15, marginBottom: 15, borderRadius: RADIUS.sm },
+  alertTitle: { fontWeight: 'bold', color: COLORS.danger, fontSize: 16 },
+  alertText: { color: COLORS.danger, fontSize: 14, marginTop: 4 },
+  pestBox: { backgroundColor: COLORS.warningSoft, borderWidth: 1, borderColor: COLORS.warning, padding: 15, marginBottom: 15, borderRadius: RADIUS.sm },
+  pestTitle: { fontWeight: 'bold', color: COLORS.warning, fontSize: 16 },
+  pestText: { color: COLORS.warning, fontSize: 14, marginTop: 4 },
+  weatherRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  dayText: { fontWeight: 'bold', fontSize: 16, color: COLORS.textPrimary, flex: 1 },
   weatherDetails: { flexDirection: 'row', flex: 2, justifyContent: 'space-between' },
-  weatherText: { fontSize: 14, color: '#555', fontWeight: '500' }
+  weatherText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' }
 });
