@@ -350,24 +350,51 @@ export default function ChatBot() {
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         (window as any).recognition = recognition;
+        (window as any).recognitionGotResult = false;
         recognition.lang = selectedLang;
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         
         recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInputText(transcript);
-          setIsListening(false);
+          (window as any).recognitionGotResult = true;
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = 0; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setInputText(finalTranscript);
+            setIsListening(false);
+            try { recognition.stop(); } catch(e) {}
+          } else if (interimTranscript) {
+            setInputText(interimTranscript);
+          }
         };
         recognition.onerror = (event: any) => {
           console.error("Web Speech Error:", event.error);
+          if (event.error === 'not-allowed') {
+            setInputText('');
+            alert('Microphone permission denied. Please allow microphone access in your browser settings.');
+          }
           setIsListening(false);
         };
-        recognition.onend = () => setIsListening(false);
+        recognition.onend = () => {
+          // Only reset if we never got a result (browser auto-stopped)
+          if (!(window as any).recognitionGotResult) {
+            setInputText('');
+          }
+          setIsListening(false);
+        };
         
         recognition.start();
       } else {
-        Alert.alert("Browser Not Supported", "Your web browser does not support voice dictation. Please type your question.");
+        alert("Your browser does not support voice dictation. Please use Chrome or Edge.");
         setIsListening(false);
       }
       return;
