@@ -14,7 +14,12 @@ import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
-import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
+
+// Voice is native-only — on web we use the browser's Web Speech API instead
+let Voice: any = null;
+if (Platform.OS !== 'web') {
+  Voice = require('@react-native-voice/voice').default;
+}
 
 // AWS IMPORTS
 import { Amplify } from 'aws-amplify';
@@ -303,13 +308,15 @@ export default function ChatBot() {
     return () => unsubscribe();
   }, [offlineQueue]);
 
-  // Voice Setup
+  // Voice Setup (native only)
   useEffect(() => {
-    Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+    if (Platform.OS === 'web' || !Voice) return;
+    
+    Voice.onSpeechResults = (e: any) => {
       if (e.value && e.value.length > 0) setInputText(e.value[0]);
       setIsListening(false);
     };
-    Voice.onSpeechError = (e: SpeechErrorEvent) => {
+    Voice.onSpeechError = (e: any) => {
       console.log("Speech Error:", e);
       setIsListening(false);
     };
@@ -325,7 +332,7 @@ export default function ChatBot() {
           (window as any).recognition.stop();
         }
       } else {
-        try { await Voice.stop(); } catch (e) {}
+        try { if (Voice) await Voice.stop(); } catch (e) {}
       }
       setIsListening(false);
       return;
@@ -368,13 +375,17 @@ export default function ChatBot() {
 
     // 📱 NATIVE iOS / ANDROID
     try {
+      if (!Voice) {
+        setIsListening(false);
+        return;
+      }
       // HACKATHON PRESENTATION MODE: Apple's Simulator doesn't support Speech Recognition hardware.
       // We auto-fill a sample question after 3 seconds so you can demo it smoothly in the Simulator!
       setTimeout(() => {
         setIsListening(prev => {
           if (prev) {
             setInputText(mockVoiceDict[lang] || mockVoiceDict['en']);
-            Voice.stop().catch(()=>{});
+            if (Voice) Voice.stop().catch(()=>{});
             return false;
           }
           return prev;
@@ -389,12 +400,28 @@ export default function ChatBot() {
   };
 
   const speakText = (text: string) => {
+    const cleanText = text.replace(/[#*]/g, '');
+    const localeMap: any = { en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', pa: 'pa-IN', hr: 'hi-IN' };
+    
+    if (Platform.OS === 'web') {
+      // 🌐 Web TTS using browser's built-in SpeechSynthesis
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+        } else {
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.lang = localeMap[lang] || 'en-IN';
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+      return;
+    }
+    
     Speech.isSpeakingAsync().then(isSpeaking => {
       if (isSpeaking) {
         Speech.stop();
       } else {
-        const localeMap: any = { en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', pa: 'pa-IN', hr: 'hi-IN' };
-        Speech.speak(text.replace(/[#*]/g, ''), { language: localeMap[lang] || 'en-IN' });
+        Speech.speak(cleanText, { language: localeMap[lang] || 'en-IN' });
       }
     });
   };
