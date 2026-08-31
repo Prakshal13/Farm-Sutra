@@ -348,53 +348,92 @@ export default function ChatBot() {
     if (Platform.OS === 'web') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        (window as any).recognition = recognition;
-        (window as any).recognitionGotResult = false;
-        recognition.lang = selectedLang;
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        
-        recognition.onresult = (event: any) => {
-          (window as any).recognitionGotResult = true;
-          let finalTranscript = '';
-          let interimTranscript = '';
+        try {
+          const recognition = new SpeechRecognition();
+          (window as any).recognition = recognition;
+          (window as any).recognitionGotResult = false;
+          recognition.lang = selectedLang;
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
           
-          for (let i = 0; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            } else {
-              interimTranscript += event.results[i][0].transcript;
+          recognition.onstart = () => {
+            console.log('🎤 Speech recognition started');
+          };
+          
+          recognition.onaudiostart = () => {
+            console.log('🔊 Audio capture started');
+          };
+          
+          recognition.onresult = (event: any) => {
+            (window as any).recognitionGotResult = true;
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            for (let i = 0; i < event.results.length; i++) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              } else {
+                interimTranscript += event.results[i][0].transcript;
+              }
             }
-          }
-          
-          if (finalTranscript) {
-            setInputText(finalTranscript);
+            
+            if (finalTranscript) {
+              setInputText(finalTranscript);
+              setIsListening(false);
+              try { recognition.stop(); } catch(e) {}
+            } else if (interimTranscript) {
+              setInputText(interimTranscript);
+            }
+          };
+
+          recognition.onspeechend = () => {
+            console.log('🔇 Speech ended');
+          };
+
+          recognition.onerror = (event: any) => {
+            console.error("Web Speech Error:", event.error, event.message);
+            let errorMsg = '';
+            switch(event.error) {
+              case 'not-allowed':
+                errorMsg = 'Microphone permission denied. Click the lock icon in the address bar → allow microphone.';
+                break;
+              case 'no-speech':
+                errorMsg = 'No speech detected. Please speak louder or check your microphone.';
+                break;
+              case 'audio-capture':
+                errorMsg = 'No microphone found. Please connect a microphone.';
+                break;
+              case 'network':
+                errorMsg = 'Network error. Speech recognition requires internet.';
+                break;
+              default:
+                errorMsg = 'Speech error: ' + event.error;
+            }
+            setInputText(errorMsg);
+            setTimeout(() => setInputText(''), 4000);
             setIsListening(false);
-            try { recognition.stop(); } catch(e) {}
-          } else if (interimTranscript) {
-            setInputText(interimTranscript);
-          }
-        };
-        recognition.onerror = (event: any) => {
-          console.error("Web Speech Error:", event.error);
-          if (event.error === 'not-allowed') {
-            setInputText('');
-            alert('Microphone permission denied. Please allow microphone access in your browser settings.');
-          }
+          };
+
+          recognition.onend = () => {
+            console.log('🛑 Recognition ended. Got result:', (window as any).recognitionGotResult);
+            if (!(window as any).recognitionGotResult) {
+              setInputText('');
+            }
+            setIsListening(false);
+          };
+          
+          recognition.start();
+          console.log('✅ recognition.start() called successfully');
+        } catch (err: any) {
+          console.error('Failed to start speech recognition:', err);
+          setInputText('Error: ' + (err.message || 'Could not start speech recognition'));
+          setTimeout(() => setInputText(''), 4000);
           setIsListening(false);
-        };
-        recognition.onend = () => {
-          // Only reset if we never got a result (browser auto-stopped)
-          if (!(window as any).recognitionGotResult) {
-            setInputText('');
-          }
-          setIsListening(false);
-        };
-        
-        recognition.start();
+        }
       } else {
-        alert("Your browser does not support voice dictation. Please use Chrome or Edge.");
+        setInputText('Voice not supported in this browser. Use Chrome.');
+        setTimeout(() => setInputText(''), 4000);
         setIsListening(false);
       }
       return;
